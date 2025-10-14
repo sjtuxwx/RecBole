@@ -320,7 +320,7 @@ class Trainer(AbstractTrainer):
         """
         resume_file = str(resume_file)
         self.saved_model_file = resume_file
-        checkpoint = torch.load(resume_file, map_location=self.device)
+        checkpoint = torch.load(resume_file, map_location=self.device, weights_only=False)
         self.start_epoch = checkpoint["epoch"] + 1
         self.cur_step = checkpoint["cur_step"]
         self.best_valid_score = checkpoint["best_valid_score"]
@@ -535,6 +535,7 @@ class Trainer(AbstractTrainer):
 
         scores = scores.view(-1, self.tot_item_num)
         scores[:, 0] = -np.inf
+        # history_index是一个元组(history_u: torch.Tensor, history_i: torch.Tensor)，表示用户历史交互过的物品和对应的itemid
         if history_index is not None:
             scores[history_index] = -np.inf
         return interaction, scores, positive_u, positive_i
@@ -580,7 +581,7 @@ class Trainer(AbstractTrainer):
 
         if load_best_model:
             checkpoint_file = model_file or self.saved_model_file
-            checkpoint = torch.load(checkpoint_file, map_location=self.device)
+            checkpoint = torch.load(checkpoint_file, map_location=self.device, weights_only=False)
             self.model.load_state_dict(checkpoint["state_dict"])
             self.model.load_other_parameter(checkpoint.get("other_parameter"))
             message_output = "Loading model structure and parameters from {}".format(
