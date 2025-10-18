@@ -16,7 +16,7 @@ import sys
 import torch.distributed as dist
 from collections.abc import MutableMapping
 from logging import getLogger
-
+from collections import OrderedDict
 from ray import tune
 
 from recbole.config import Config
@@ -149,10 +149,20 @@ def run_recbole(
         train_data, valid_data, saved=saved, show_progress=config["show_progress"]
     )
 
-    # model evaluation
-    test_result = trainer.evaluate(
-        test_data, load_best_model=saved, show_progress=config["show_progress"]
-    )
+    if config["save_single_user"] == False:
+        # model evaluation
+        test_result = trainer.evaluate(
+            test_data, load_best_model=saved, show_progress=config["show_progress"]
+        )
+    else:
+        single_user_result = trainer.evaluate_by_single_user(
+            test_data, load_best_model=saved, show_progress=config["show_progress"]
+        )
+        test_result = OrderedDict()
+        for k, v in single_user_result.items():
+            test_result[k] = v.mean()
+        
+        save_result(config, single_user_result)
 
     environment_tb = get_environment(config)
     logger.info(
@@ -264,3 +274,25 @@ def load_data_and_model(model_file):
     model.load_other_parameter(checkpoint.get("other_parameter"))
 
     return config, model, dataset, train_data, valid_data, test_data
+
+
+def save_result(config: Config, result: dict,):
+    r"""Save the result of evaluation.
+
+    Args:
+        save_path (str): The path of saved file.
+        result (dict): The result of evaluation.
+        k (int): The top-k item to evaluate.
+    """
+    import pandas as pd
+    from pathlib import Path
+    import os
+    base_path = os.path.join(config["save_base_path"])
+    save_path = os.path.join(base_path, config["dataset"], config["model"])
+    if not Path(save_path).exists():
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+    result = pd.DataFrame(result)
+    for col in result.columns:
+        pd.DataFrame(result[col]).to_csv(os.path.join(save_path, f"{col}.csv"), index=False)
+
+    

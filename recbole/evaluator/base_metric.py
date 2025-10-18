@@ -80,6 +80,23 @@ class TopkMetric(AbstractMetric):
             key = "{}@{}".format(metric, k)
             metric_dict[key] = round(avg_result[k - 1], self.decimal_place)
         return metric_dict
+    
+    def topk_result_with_single_user(self, metric, value):
+        """Match the metric value to the `k` and put them in `dictionary` form.
+
+        Args:
+            metric(str): the name of calculated metric.
+            value(numpy.ndarray): metrics for each user, including values from `metric@1` to `metric@max(self.topk)`.
+
+        Returns:
+            dict: metric values required in the configuration.
+        """
+        metric_dict = {}
+        # avg_result = value.mean(axis=0)
+        for k in self.topk:
+            key = "{}@{}".format(metric, k)
+            metric_dict[key] = value[:, k - 1].round(self.decimal_place)
+        return metric_dict
 
     def metric_info(self, pos_index, pos_len=None):
         """Calculate the value of the metric.

@@ -108,7 +108,10 @@ class LightGCN(GeneralRecommender):
                 )
             )
         )
-        A._update(data_dict)
+        # A._update(data_dict)
+        # 修复scipy版本兼容性问题：新版本scipy中dok_matrix没有_update方法
+        for (i, j), value in data_dict.items():
+            A[i, j] = value
         # norm adj matrix
         sumArr = (A > 0).sum(axis=1)
         # add epsilon to avoid divide by zero Warning

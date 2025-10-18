@@ -58,6 +58,12 @@ class Hit(TopkMetric):
         result = self.metric_info(pos_index)
         metric_dict = self.topk_result("hit", result)
         return metric_dict
+    
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, _ = self.used_info(dataobject)
+        result = self.metric_info(pos_index)
+        metric_dict = self.topk_result_with_single_user("hit", result)
+        return metric_dict
 
     def metric_info(self, pos_index):
         result = np.cumsum(pos_index, axis=1)
@@ -83,6 +89,12 @@ class MRR(TopkMetric):
         pos_index, _ = self.used_info(dataobject)
         result = self.metric_info(pos_index)
         metric_dict = self.topk_result("mrr", result)
+        return metric_dict
+    
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, _ = self.used_info(dataobject)
+        result = self.metric_info(pos_index)
+        metric_dict = self.topk_result_with_single_user("mrr", result)
         return metric_dict
 
     def metric_info(self, pos_index):
@@ -122,6 +134,12 @@ class MAP(TopkMetric):
         result = self.metric_info(pos_index, pos_len)
         metric_dict = self.topk_result("map", result)
         return metric_dict
+    
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, pos_len = self.used_info(dataobject)
+        result = self.metric_info(pos_index, pos_len)
+        metric_dict = self.topk_result_with_single_user("map", result)
+        return metric_dict
 
     def metric_info(self, pos_index, pos_len):
         pre = pos_index.cumsum(axis=1) / np.arange(1, pos_index.shape[1] + 1)
@@ -156,6 +174,12 @@ class Recall(TopkMetric):
         metric_dict = self.topk_result("recall", result)
         return metric_dict
 
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, pos_len = self.used_info(dataobject)
+        result = self.metric_info(pos_index, pos_len)
+        metric_dict = self.topk_result_with_single_user("recall", result)
+        return metric_dict
+
     def metric_info(self, pos_index, pos_len):
         return np.cumsum(pos_index, axis=1) / pos_len.reshape(-1, 1)
 
@@ -182,6 +206,14 @@ class NDCG(TopkMetric):
         result = self.metric_info(pos_index, pos_len)
         metric_dict = self.topk_result("ndcg", result)
         return metric_dict
+    
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, pos_len = self.used_info(dataobject)
+        result = self.metric_info(pos_index, pos_len)
+        metric_dict = self.topk_result_with_single_user("ndcg", result)
+        return metric_dict
+    
+    
 
     def metric_info(self, pos_index, pos_len):
         len_rank = np.full_like(pos_len, pos_index.shape[1])
@@ -221,6 +253,12 @@ class Precision(TopkMetric):
         pos_index, _ = self.used_info(dataobject)
         result = self.metric_info(pos_index)
         metric_dict = self.topk_result("precision", result)
+        return metric_dict
+    
+    def calculate_metric_by_single_user(self, dataobject):
+        pos_index, _ = self.used_info(dataobject)
+        result = self.metric_info(pos_index)
+        metric_dict = self.topk_result_with_single_user("precision", result)
         return metric_dict
 
     def metric_info(self, pos_index):
