@@ -13,6 +13,6 @@ saved/
 docs/build/
 wandb/*
 /ray_log*
-dataset/
 backup/
 output/
+/dataset/
