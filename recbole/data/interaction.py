@@ -203,6 +203,10 @@ class Interaction(object):
         else:
             for k in self.interaction:
                 ret[k] = self.interaction[k].to(device)
+        if hasattr(self, "user2item"):
+            ret["user2item"] = self.user2item.to(device)
+        if hasattr(self, "itempop"):
+            ret["itempop"] = self.itempop.to(device)
         return Interaction(ret)
 
     def cpu(self):

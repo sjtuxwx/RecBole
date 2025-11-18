@@ -41,7 +41,7 @@ from recbole.utils.url import (
 )
 
 
-class Dataset(torch.utils.data.Dataset):
+class FairDataset(torch.utils.data.Dataset):
     """:class:`Dataset` stores the original dataset in memory.
     It provides many useful functions for data preprocessing, such as k-core data filtering and missing value
     imputation. Features are stored as :class:`pandas.DataFrame` inside :class:`~recbole.data.dataset.dataset.Dataset`.
@@ -2092,11 +2092,10 @@ class Dataset(torch.utils.data.Dataset):
             col_num = max_inter_num
 
         if col_num > max_col_num * 0.2:
-            # self.logger.warning(
-            #     f"Max value of {row}'s history interaction records has reached "
-            #     f"{col_num / max_col_num * 100}% of the total."
-            # )
-            pass
+            self.logger.warning(
+                f"Max value of {row}'s history interaction records has reached "
+                f"{col_num / max_col_num * 100}% of the total."
+            )
 
         history_matrix = np.zeros((row_num, col_num), dtype=np.int64)
         history_value = np.zeros((row_num, col_num))

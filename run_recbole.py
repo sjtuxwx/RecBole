@@ -8,6 +8,10 @@
 # @Email  : chenyuwuxinn@gmail.com, houyupeng@ruc.edu.cn, zhlin@ruc.edu.cn
 
 import argparse
+import logging
+# logging.disable(logging.WARNING)
+
+# warnings.filterwarnings("ignore")
 
 from recbole.quick_start import run
 
@@ -15,7 +19,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", "-m", type=str, default="LightGCN", help="name of models")
     parser.add_argument(
-        "--dataset", "-d", type=str, default="ml-100k", help="name of datasets"
+        "--dataset", "-d", type=str, default="ml-1m", help="name of datasets"
     )
     parser.add_argument("--config_files", type=str, default=None, help="config files")
     parser.add_argument(

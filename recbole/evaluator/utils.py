@@ -116,3 +116,4 @@ def _binary_clf_curve(trues, preds):
     tps = np.cumsum(trues)[threshold_idxs]
     fps = 1 + threshold_idxs - tps
     return fps, tps
+

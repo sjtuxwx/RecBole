@@ -18,10 +18,10 @@ recbole.trainer.trainer
 """
 
 import os
-
+import torch.nn.functional as F
 from logging import getLogger
 from time import time
-
+import random
 import numpy as np
 import torch
 import torch.optim as optim
@@ -200,7 +200,7 @@ class Trainer(AbstractTrainer):
             optimizer = optim.Adam(params, lr=learning_rate)
         return optimizer
 
-    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False, context=None):
         r"""Train the model in an epoch
 
         Args:
@@ -243,6 +243,7 @@ class Trainer(AbstractTrainer):
                 sync_loss = self.sync_grad_loss()
 
             with torch.autocast(device_type=self.device.type, enabled=self.enable_amp):
+                interaction.context = context
                 losses = loss_func(interaction)
 
             if isinstance(losses, tuple):
@@ -268,7 +269,50 @@ class Trainer(AbstractTrainer):
                 iter_data.set_postfix_str(
                     set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
                 )
+        
+        itempop = context.itempop
+        user_interact = context.user_interact
+        
+        # self.optimizer.zero_grad()
+        # G1, G2 = self.split_by_pop(user_interact, itempop)
+        # align_loss = self.alignment_user(self.model.get_user_embedding(G1), self.model.get_user_embedding(G2)) * 0.2
+        # scaler.scale(align_loss).backward()
+        # scaler.step(self.optimizer)
+        # scaler.update()
+        
         return total_loss
+
+    def alignment_user(self, x, y):
+        x, y = F.normalize(x, dim=-1), F.normalize(y, dim=-1)
+        return (x - y).norm(p=2, dim=1).pow(2).mean()
+
+    def split_by_pop(self, user_interact, itempop):
+        G1, G2 = [], []
+        # user_interact 与 itempop 均为 torch.Tensor
+        for u in range(1, user_interact.shape[0]):
+            # 取出该用户交互过的物品索引
+            items = user_interact[u].nonzero().squeeze(-1)  # torch.Tensor
+            if items.numel() == 0:
+                continue
+            # 根据 itempop 值对物品排序
+            pop_vals = itempop[items]  # torch.Tensor
+            sorted_idx = pop_vals.argsort()
+            items_sorted = items[sorted_idx][1:]  # 去掉最冷门的1个
+            # 若为奇数，随机去掉1个
+            if items_sorted.shape[0] % 2 != 0:
+                del_idx = torch.randint(items_sorted.shape[0], (1,)).item()
+                items_sorted = torch.cat(
+                    [items_sorted[:del_idx], items_sorted[del_idx + 1:]]
+                )
+            half = items_sorted.shape[0] // 2
+            G1.append(items_sorted[:half])
+            G2.append(items_sorted[half:])
+        # 合并并返回 torch.Tensor
+        G1 = torch.cat(G1) if G1 else torch.empty(0, dtype=torch.long)
+        G2 = torch.cat(G2) if G2 else torch.empty(0, dtype=torch.long)
+        # G1.to(self.device)
+        # G2.to(self.device)
+        return G1.to(self.device), G2.to(self.device)
 
     def _valid_epoch(self, valid_data, show_progress=False):
         r"""Valid the model with valid data
@@ -410,6 +454,7 @@ class Trainer(AbstractTrainer):
         saved=True,
         show_progress=False,
         callback_fn=None,
+        context=None
     ):
         r"""Train the model based on the train data and the valid data.
 
@@ -438,7 +483,7 @@ class Trainer(AbstractTrainer):
             # train
             training_start_time = time()
             train_loss = self._train_epoch(
-                train_data, epoch_idx, show_progress=show_progress
+                train_data, epoch_idx, show_progress=show_progress, context=context
             )
             self.train_loss_dict[epoch_idx] = (
                 sum(train_loss) if isinstance(train_loss, tuple) else train_loss
@@ -687,6 +732,10 @@ class Trainer(AbstractTrainer):
             )
         self.eval_collector.model_collect(self.model)
         struct = self.eval_collector.get_data_struct()
+        top_k_items = struct['rec.items']
+        u_item, cnt = torch.unique(top_k_items, return_counts=True)
+        import pandas as pd
+        self.logger.info(pd.Series(cnt).describe())
         result = self.evaluator.evaluate_by_single_user(struct)
         if not self.config["single_spec"]:
             result = self._map_reduce(result, num_sample)

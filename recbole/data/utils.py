@@ -49,6 +49,7 @@ def create_dataset(config):
             ModelType.KNOWLEDGE: "KnowledgeBasedDataset",
             ModelType.TRADITIONAL: "Dataset",
             ModelType.DECISIONTREE: "Dataset",
+            ModelType.FAIRNESSTYPE: "FairDataset",
         }
         dataset_class = getattr(dataset_module, type2class[model_type])
 
@@ -141,7 +142,7 @@ def load_split_dataloaders(config):
     return train_data, valid_data, test_data
 
 
-def data_preparation(config, dataset):
+def data_preparation(config, dataset, context):
     """Split the dataset by :attr:`config['[valid|test]_eval_args']` and create training, validation and test dataloader.
 
     Note:
@@ -166,6 +167,10 @@ def data_preparation(config, dataset):
         built_datasets = dataset.build()
 
         train_dataset, valid_dataset, test_dataset = built_datasets
+        # raw_train_dataset = train_dataset
+        interaction_info = train_dataset.history_item_matrix()[0]
+        context.user_interact = interaction_info
+        context.itempop = train_dataset.history_user_matrix()[2]
         train_sampler, valid_sampler, test_sampler = create_samplers(
             config, dataset, built_datasets
         )

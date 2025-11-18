@@ -18,6 +18,7 @@ from collections.abc import MutableMapping
 from logging import getLogger
 from collections import OrderedDict
 from ray import tune
+from recbole.fairness.context import Context
 
 from recbole.config import Config
 from recbole.data import (
@@ -34,6 +35,7 @@ from recbole.utils import (
     get_flops,
     get_environment,
 )
+
 
 
 def run(
@@ -128,9 +130,13 @@ def run_recbole(
     # dataset filtering
     dataset = create_dataset(config)
     logger.info(dataset)
+    
+    context = Context(dataset.user_num, dataset.item_num)
 
     # dataset splitting
-    train_data, valid_data, test_data = data_preparation(config, dataset)
+    train_data, valid_data, test_data = data_preparation(config, dataset, context)
+    context = context.to(config["device"])
+    
 
     # model loading and initialization
     init_seed(config["seed"] + config["local_rank"], config["reproducibility"])
@@ -146,7 +152,7 @@ def run_recbole(
 
     # model training
     best_valid_score, best_valid_result = trainer.fit(
-        train_data, valid_data, saved=saved, show_progress=config["show_progress"]
+        train_data, valid_data, saved=saved, show_progress=config["show_progress"], context = context
     )
 
     if config["save_single_user"] == False:
@@ -163,6 +169,7 @@ def run_recbole(
             test_result[k] = v.mean()
         
         save_result(config, single_user_result)
+        # trainer.eval_collector.export_results()
 
     environment_tb = get_environment(config)
     logger.info(
