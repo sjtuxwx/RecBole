@@ -66,7 +66,7 @@ class Config(object):
     """
 
     def __init__(
-        self, model=None, dataset=None, config_file_list=None, config_dict=None
+        self, model=None, dataset=None, config_file_list=None, config_dict=None, devices=None
     ):
         """
         Args:
@@ -91,7 +91,7 @@ class Config(object):
         self._load_internal_config_dict(self.model, self.model_class, self.dataset)
         self.final_config_dict = self._get_final_config_dict()
         self._set_default_parameters()
-        self._init_device()
+        self._init_device(devices)
         self._set_train_neg_sample_args()
         self._set_eval_neg_sample_args("valid")
         self._set_eval_neg_sample_args("test")
@@ -473,7 +473,7 @@ class Config(object):
                 "Full sort evaluation do not match value-based metrics!"
             )
 
-    def _init_device(self):
+    def _init_device(self, devices):
         if isinstance(self.final_config_dict["gpu_id"], tuple):
             self.final_config_dict["gpu_id"] = ",".join(
                 map(str, list(self.final_config_dict["gpu_id"]))
@@ -481,6 +481,8 @@ class Config(object):
         else:
             self.final_config_dict["gpu_id"] = str(self.final_config_dict["gpu_id"])
         gpu_id = self.final_config_dict["gpu_id"]
+        if devices is not None:
+            gpu_id = devices
         os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
         import torch
 

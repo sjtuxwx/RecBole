@@ -49,6 +49,7 @@ def run(
     ip="localhost",
     port="5678",
     group_offset=0,
+    devices=None,
 ):
     if nproc == 1 and world_size <= 0:
         res = run_recbole(
@@ -57,6 +58,7 @@ def run(
             config_file_list=config_file_list,
             config_dict=config_dict,
             saved=saved,
+            devices=devices,
         )
     else:
         if world_size == -1:
@@ -99,6 +101,7 @@ def run_recbole(
     dataset=None,
     config_file_list=None,
     config_dict=None,
+    devices=None,
     saved=True,
     queue=None,
 ):
@@ -119,6 +122,7 @@ def run_recbole(
         dataset=dataset,
         config_file_list=config_file_list,
         config_dict=config_dict,
+        devices=devices,
     )
     init_seed(config["seed"], config["reproducibility"])
     # logger initialization

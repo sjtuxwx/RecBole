@@ -40,6 +40,11 @@ if __name__ == "__main__":
         default=0,
         help="the global rank offset of this group",
     )
+    parser.add_argument(
+        "--gpu_ids",
+        type=str,
+        help="the global rank offset of this group",
+    )
 
     args, _ = parser.parse_known_args()
 
@@ -56,4 +61,5 @@ if __name__ == "__main__":
         ip=args.ip,
         port=args.port,
         group_offset=args.group_offset,
+        devices=args.gpu_ids,
     )

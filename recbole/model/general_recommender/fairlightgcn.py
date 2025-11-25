@@ -27,7 +27,7 @@ from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
-from recbole.fairness.pop_utils import InfoNCE, split_by_pop
+from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
 
 class FairLightGCN(GeneralRecommender):
     r"""LightGCN is a GCN-based recommender model.
@@ -78,6 +78,31 @@ class FairLightGCN(GeneralRecommender):
         # parameters initialization
         self.apply(xavier_uniform_initialization)
         self.other_parameter_name = ["restore_user_e", "restore_item_e"]
+
+        if config['eps'] is None:
+            self.eps = 0.2
+        else:
+            self.eps = config['eps']
+
+        if config['gama'] is None:
+            self.gama = 0.4
+        else:
+            self.gama = config['gama']
+
+        if config['beta'] is None:
+            self.beta = 0.2
+        else:
+            self.beta = config['beta']
+
+        if config['cl_rate'] is None:
+            self.cl_rate = 0.2
+        else:
+            self.cl_rate = config['cl_rate']
+        
+        # if "eps" in config.keys():
+        #     self.eps = config["eps"]
+        # else:
+        #     self.eps = 0.2
 
     def get_norm_adj_mat(self):
         r"""Get the normalized interaction matrix of users and items.
@@ -141,37 +166,48 @@ class FairLightGCN(GeneralRecommender):
 
     def forward(self, perturbed=False):
         all_embeddings = self.get_ego_embeddings()
-        embeddings_list = [all_embeddings]
+        embeddings_list = []
 
         for layer_idx in range(self.n_layers):
             all_embeddings = torch.sparse.mm(self.norm_adj_matrix, all_embeddings)
+            if perturbed:
+                random_noise = torch.rand_like(all_embeddings).to(self.device)
+                all_embeddings = all_embeddings + torch.sign(all_embeddings) * F.normalize(random_noise,
+                                                                                           dim=1) * self.eps
             embeddings_list.append(all_embeddings)
+            
         lightgcn_all_embeddings = torch.stack(embeddings_list, dim=1)
         lightgcn_all_embeddings = torch.mean(lightgcn_all_embeddings, dim=1)
 
         user_all_embeddings, item_all_embeddings = torch.split(
             lightgcn_all_embeddings, [self.n_users, self.n_items]
         )
-        if perturbed:
-            random_noise = torch.rand_like(user_all_embeddings).to(self.device)
-            user_all_embeddings = user_all_embeddings + torch.sign(user_all_embeddings) * F.normalize(random_noise, dim=1) * 0.2
-            
-            random_noise = torch.rand_like(item_all_embeddings).to(self.device)
-            item_all_embeddings = item_all_embeddings + torch.sign(item_all_embeddings) * F.normalize(random_noise, dim=1) * 0.2
+        
         return user_all_embeddings, item_all_embeddings
 
 
-    def cl_loss(self, user, item, itempop):
+    def cl_loss(self, user, item, itempop, cl_rate=0.2, gama=0.2, beta=0.2):
         G1, G2 = split_by_pop(item, itempop)
-        _, item_view1 = self.forward(perturbed=True)
-        item_view1 = item_view1[item]
+        user_view1, item_view1 = self.forward(perturbed=True)
+        # item_view1 = item_view1[item]
         
-        _, item_view2 = self.forward(perturbed=True)
-        item_view2 = item_view2[item]   
-        clss = InfoNCE(item_view1, item_view2)
+        user_view2, item_view2 = self.forward(perturbed=True)
+        # item_view2 = item_view2[item]   
+        # user_loss = InfoNCE(user_view1[user], user_view2[user])
+        user_loss = InfoNCE(user_view1[user], user_view2[user])
+
+        # item_loss = InfoNCE(item_view1[item], item_view2[item])
+
+        item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
+        item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
+
+        # item_loss1 = 0
+        # item_loss2 = 0
         
+        # return cl_rate * item_loss
+        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2) / 2
         
-        return clss
+        # return user_loss + item_loss1 + item_loss2
 
     def calculate_loss(self, interaction):
         # clear the storage variable when training
@@ -192,7 +228,7 @@ class FairLightGCN(GeneralRecommender):
         context.itempop = context.itempop.to(self.device)
         
 
-        cl_loss = self.cl_loss(user, item, itempop)
+        cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
 
 
 
@@ -213,7 +249,7 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + 0.2 * cl_loss
+        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         return loss
 

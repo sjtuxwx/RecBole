@@ -50,7 +50,7 @@ normalize_field: ~              # (list) List of filed names to be normalized.
 normalize_all: True            # (bool) Whether or not to normalize all the float like fields.
 save_single_user: True          # (bool) Whether or not to save the single user interaction data.
 save_base_path: output  # (str) Path to save the single user interaction data.
-train_batch_size: 10240
+train_batch_size: 1024
 eval_batch_size: 102400
 
 
