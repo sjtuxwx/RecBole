@@ -154,6 +154,7 @@ def run_recbole(
     # trainer loading and initialization
     trainer = get_trainer(config["MODEL_TYPE"], config["model"])(config, model)
 
+    # trainer.resume_checkpoint('saved/FairLightGCN-Nov-25-2025_19-54-34.pth')
     # model training
     best_valid_score, best_valid_result = trainer.fit(
         train_data, valid_data, saved=saved, show_progress=config["show_progress"], context = context

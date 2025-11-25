@@ -28,7 +28,7 @@ from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
-
+from recbole.rq.models.rqvae import RQVAE
 class FairLightGCN(GeneralRecommender):
     r"""LightGCN is a GCN-based recommender model.
 
@@ -48,6 +48,7 @@ class FairLightGCN(GeneralRecommender):
         # load dataset info
         self.interaction_matrix = dataset.inter_matrix(form="coo").astype(np.float32)
 
+        
         # load parameters info
         self.latent_dim = config[
             "embedding_size"
@@ -85,7 +86,7 @@ class FairLightGCN(GeneralRecommender):
             self.eps = config['eps']
 
         if config['gama'] is None:
-            self.gama = 0.4
+            self.gama = 0.2
         else:
             self.gama = config['gama']
 
@@ -103,6 +104,58 @@ class FairLightGCN(GeneralRecommender):
         #     self.eps = config["eps"]
         # else:
         #     self.eps = 0.2
+        self.gen_extra_embedding()
+
+        self.rq_model = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1),
+                  num_emb_list=[256, 256, 256],
+                  e_dim=32,
+                  layers=[2048, 1024, 512, 256, 128, 64],
+                  dropout_prob=0,
+                  bn=False,
+                  loss_type='mse',
+                  quant_loss_weight=1,
+                  beta=0.25,
+                  kmeans_init=True,
+                  kmeans_iters=100,
+                  sk_epsilons=[0.0, 0.0, 0.0],
+                  sk_iters=50,
+                  )
+
+    def gen_extra_embedding(self):
+        self.item_extra_embedding = {}
+        for extra_info in self.eInfo['item']:
+            aa = torch.nn.Embedding(
+                num_embeddings=self.eInfo['item'][extra_info], embedding_dim=self.latent_dim, device=self.device
+            )
+            self.item_extra_embedding[extra_info] =  aa
+    def extra_embedding_forward(self, extra_info, item):
+        embedding_layer = self.item_extra_embedding[extra_info]
+        self.item_embedding_name = []
+        emb = embedding_layer(item)
+        if item.dim() == 2:
+            mask = (item != 0).unsqueeze(-1)  # [batch_size, seq_len, 1]
+            emb_masked = emb * mask  # [batch_size, seq_len, embedding_dim]
+            valid_count = mask.sum(dim=1)  # [batch_size, 1]
+            mean_emb = emb_masked.sum(dim=1) / valid_count.clamp(min=1)  # [batch_size, embedding_dim]
+            return mean_emb
+        else:
+            # 一维时直接返回 embedding
+            return emb
+            
+
+    def forward_rq_item_epoch(self, rq_model, data):
+        out, rq_loss, indices = rq_model(data)
+
+        return out, rq_loss, indices
+
+    def process_item_side_info(self, interaction):
+        res = []
+        for extra_info in self.eInfo['item']:
+            item = interaction[extra_info]
+            emb = self.extra_embedding_forward(extra_info, item)
+            res.append(emb)
+        res.append(self.item_embedding(interaction[self.ITEM_ID]))
+        return torch.concat(res, dim=-1)
 
     def get_norm_adj_mat(self):
         r"""Get the normalized interaction matrix of users and items.
@@ -203,16 +256,19 @@ class FairLightGCN(GeneralRecommender):
 
         # item_loss1 = 0
         # item_loss2 = 0
-        
+        user_loss = 0
         # return cl_rate * item_loss
-        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2) / 2
+        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
 
     def calculate_loss(self, interaction):
         # clear the storage variable when training
+
         if self.restore_user_e is not None or self.restore_item_e is not None:
             self.restore_user_e, self.restore_item_e = None, None
+
+        
 
         user = interaction[self.USER_ID]
         pos_item = interaction[self.ITEM_ID]
@@ -251,7 +307,10 @@ class FairLightGCN(GeneralRecommender):
 
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
-        return loss
+        item_side_info = self.process_item_side_info(interaction)
+        out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model, item_side_info)
+
+        return loss + 10000000 * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]

@@ -107,6 +107,26 @@ class GeneralRecommender(AbstractRecommender):
 
         # load parameters info
         self.device = config["device"]
+        self.extract_extra_info(config, dataset)
+
+    def extract_extra_info(self, config, dataset):
+        self.eInfo = {}
+        self.eInfo['item'] = {}
+        self.eInfo['user'] = {}
+        iitem = config['load_col']['item'] if config['load_col']['item'] else {}
+        iuser = config['load_col']['user'] if config['load_col']['user'] else {}
+        for extra_info in iitem:
+            if extra_info in dataset.fields():
+                if extra_info == self.ITEM_ID:
+                    continue
+                self.eInfo['item'][extra_info] = dataset.num(extra_info)
+        for extra_info in iuser:
+            if extra_info == self.USER_ID:
+                continue
+            if extra_info in dataset.fields():
+                self.eInfo['user'][extra_info] = dataset.num(extra_info)
+        
+
 
 
 class AutoEncoderMixin(object):
