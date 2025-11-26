@@ -5,7 +5,7 @@
 .vscode/
 .idea/
 *.pyc
-*.log
+log/
 log_tensorboard
 saved/
 *.lprof

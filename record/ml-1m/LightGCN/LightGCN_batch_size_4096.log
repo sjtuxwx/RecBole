@@ -1,0 +1,441 @@
+# LightGCN在ml-1m数据集 且batch_size=4096下的baseline
+Sun 23 Nov 2025 21:37:13 INFO  ['/data/xwx/site-packages/RecBole/run_recbole.py', '--model', 'LightGCN', '--dataset', 'ml-1m', '--nproc', '1', '--ip', 'localhost', '--port', '5678', '--world_size', '-1', '--group_offset', '0']
+Sun 23 Nov 2025 21:37:13 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 2020
+state = INFO
+reproducibility = True
+data_path = dataset/ml-1m
+checkpoint_dir = saved
+show_progress = True
+save_dataset = False
+dataset_save_path = None
+save_dataloaders = False
+dataloaders_save_path = None
+log_wandb = False
+
+Training Hyper Parameters:
+epochs = 100
+train_batch_size = 4096
+learner = adam
+learning_rate = 0.001
+train_neg_sample_args = {'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}
+eval_step = 2
+stopping_step = 10
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}
+repeatable = False
+metrics = ['Recall', 'MRR', 'NDCG', 'Hit', 'Precision']
+topk = [10]
+valid_metric = MRR@10
+valid_metric_bigger = True
+eval_batch_size = 102400
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+train_batch_size = 4096
+eval_batch_size = 102400
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'rating', 'timestamp']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = None
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = None
+item_inter_num_interval = None
+alias_of_user_id = None
+alias_of_item_id = None
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = None
+normalize_field = None
+normalize_all = True
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+kg_reverse_r = False
+entity_kg_num_interval = None
+relation_kg_num_interval = None
+benchmark_filename = None
+save_single_user = True
+save_base_path = output
+attr = {'user': {'need_inter_num': True, 'need_inter_hour': True, 'need_rating': True, 'need_item_genre': True, 'need_item_year': True, 'need_zipcode_to_region': True}, 'item': {'need_inter_num': True, 'need_inter_hour': True, 'need_rating': True, 'need_age': True, 'need_gender': True, 'need_occupation': True, 'need_region': True}, 'interaction': {'timestamp_unit': 's'}}
+to_bin = {'user': {'mean_rating': {'n_bins': 5}, 'interaction_nums': {'n_bins': 5}}, 'item': {'mean_rating': {'n_bins': 5}, 'interaction_nums': {'n_bins': 5}}}
+
+Other Hyper Parameters: 
+worker = 0
+wandb_project = recbole
+shuffle = True
+require_pow = False
+enable_amp = False
+enable_scaler = False
+transform = None
+export_topk_recs = True
+export_topk_dir = None
+export_topk_filename = None
+export_topk_item_separator = None
+export_topk_separate_columns = None
+embedding_size = 64
+n_layers = 2
+reg_weight = 1e-05
+numerical_features = []
+discretization = None
+MODEL_TYPE = ModelType.GENERAL
+MODEL_INPUT_TYPE = InputType.PAIRWISE
+eval_type = EvaluatorType.RANKING
+single_spec = True
+local_rank = 0
+device = cuda
+valid_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+test_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+
+
+Sun 23 Nov 2025 21:37:18 INFO  ml-1m
+The number of users: 6041
+Average actions of users: 165.5975165562914
+The number of items: 3707
+Average actions of items: 269.88909875876953
+The number of inters: 1000209
+The sparsity of the dataset: 95.53358229599758%
+Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp']
+Sun 23 Nov 2025 21:37:23 INFO  [Training]: train_batch_size = [4096] train_neg_sample_args: [{'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}]
+Sun 23 Nov 2025 21:37:23 INFO  [Evaluation]: eval_batch_size = [102400] eval_args: [{'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}]
+Sun 23 Nov 2025 21:37:57 INFO  LightGCN(
+  (user_embedding): Embedding(6041, 64)
+  (item_embedding): Embedding(3707, 64)
+  (mf_loss): BPRLoss()
+  (reg_loss): EmbLoss()
+)
+Trainable parameters: 623872
+Sun 23 Nov 2025 21:37:57 INFO  FLOPs: 0.0
+Sun 23 Nov 2025 21:38:04 INFO  epoch 0 training [time: 6.05s, train loss: 103.6671]
+Sun 23 Nov 2025 21:38:10 INFO  epoch 1 training [time: 6.16s, train loss: 70.9667]
+Sun 23 Nov 2025 21:38:11 INFO  epoch 1 evaluating [time: 0.68s, valid_score: 0.219900]
+Sun 23 Nov 2025 21:38:11 INFO  valid result: 
+recall@10 : 0.0674    mrr@10 : 0.2199    ndcg@10 : 0.1062    hit@10 : 0.4806    precision@10 : 0.0863
+Sun 23 Nov 2025 21:38:11 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:38:17 INFO  epoch 2 training [time: 6.11s, train loss: 69.7215]
+Sun 23 Nov 2025 21:38:23 INFO  epoch 3 training [time: 5.81s, train loss: 68.8843]
+Sun 23 Nov 2025 21:38:24 INFO  epoch 3 evaluating [time: 0.53s, valid_score: 0.221300]
+Sun 23 Nov 2025 21:38:24 INFO  valid result: 
+recall@10 : 0.0665    mrr@10 : 0.2213    ndcg@10 : 0.1063    hit@10 : 0.478    precision@10 : 0.086
+Sun 23 Nov 2025 21:38:24 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:38:30 INFO  epoch 4 training [time: 6.02s, train loss: 68.3239]
+Sun 23 Nov 2025 21:38:35 INFO  epoch 5 training [time: 5.81s, train loss: 67.7777]
+Sun 23 Nov 2025 21:38:36 INFO  epoch 5 evaluating [time: 0.53s, valid_score: 0.219900]
+Sun 23 Nov 2025 21:38:36 INFO  valid result: 
+recall@10 : 0.0667    mrr@10 : 0.2199    ndcg@10 : 0.1063    hit@10 : 0.4791    precision@10 : 0.0865
+Sun 23 Nov 2025 21:38:42 INFO  epoch 6 training [time: 6.01s, train loss: 66.9982]
+Sun 23 Nov 2025 21:38:48 INFO  epoch 7 training [time: 6.20s, train loss: 66.0882]
+Sun 23 Nov 2025 21:38:49 INFO  epoch 7 evaluating [time: 0.52s, valid_score: 0.226400]
+Sun 23 Nov 2025 21:38:49 INFO  valid result: 
+recall@10 : 0.0692    mrr@10 : 0.2264    ndcg@10 : 0.1102    hit@10 : 0.4911    precision@10 : 0.0898
+Sun 23 Nov 2025 21:38:49 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:38:55 INFO  epoch 8 training [time: 6.33s, train loss: 64.2855]
+Sun 23 Nov 2025 21:39:01 INFO  epoch 9 training [time: 5.76s, train loss: 62.0676]
+Sun 23 Nov 2025 21:39:01 INFO  epoch 9 evaluating [time: 0.46s, valid_score: 0.244400]
+Sun 23 Nov 2025 21:39:01 INFO  valid result: 
+recall@10 : 0.0781    mrr@10 : 0.2444    ndcg@10 : 0.1206    hit@10 : 0.5262    precision@10 : 0.0981
+Sun 23 Nov 2025 21:39:02 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:39:07 INFO  epoch 10 training [time: 5.65s, train loss: 59.7067]
+Sun 23 Nov 2025 21:39:13 INFO  epoch 11 training [time: 5.59s, train loss: 58.0362]
+Sun 23 Nov 2025 21:39:13 INFO  epoch 11 evaluating [time: 0.44s, valid_score: 0.268900]
+Sun 23 Nov 2025 21:39:13 INFO  valid result: 
+recall@10 : 0.0843    mrr@10 : 0.2689    ndcg@10 : 0.1318    hit@10 : 0.546    precision@10 : 0.1057
+Sun 23 Nov 2025 21:39:13 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:39:19 INFO  epoch 12 training [time: 5.40s, train loss: 56.3882]
+Sun 23 Nov 2025 21:39:25 INFO  epoch 13 training [time: 6.28s, train loss: 55.1552]
+Sun 23 Nov 2025 21:39:26 INFO  epoch 13 evaluating [time: 0.60s, valid_score: 0.288400]
+Sun 23 Nov 2025 21:39:26 INFO  valid result: 
+recall@10 : 0.0903    mrr@10 : 0.2884    ndcg@10 : 0.1419    hit@10 : 0.5733    precision@10 : 0.1129
+Sun 23 Nov 2025 21:39:26 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:39:33 INFO  epoch 14 training [time: 6.83s, train loss: 53.8086]
+Sun 23 Nov 2025 21:39:39 INFO  epoch 15 training [time: 6.34s, train loss: 52.9292]
+Sun 23 Nov 2025 21:39:40 INFO  epoch 15 evaluating [time: 0.57s, valid_score: 0.299600]
+Sun 23 Nov 2025 21:39:40 INFO  valid result: 
+recall@10 : 0.0971    mrr@10 : 0.2996    ndcg@10 : 0.1494    hit@10 : 0.5924    precision@10 : 0.1182
+Sun 23 Nov 2025 21:39:40 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:39:47 INFO  epoch 16 training [time: 6.91s, train loss: 51.9771]
+Sun 23 Nov 2025 21:39:53 INFO  epoch 17 training [time: 6.15s, train loss: 51.4131]
+Sun 23 Nov 2025 21:39:53 INFO  epoch 17 evaluating [time: 0.58s, valid_score: 0.303400]
+Sun 23 Nov 2025 21:39:53 INFO  valid result: 
+recall@10 : 0.0996    mrr@10 : 0.3034    ndcg@10 : 0.1527    hit@10 : 0.5983    precision@10 : 0.121
+Sun 23 Nov 2025 21:39:53 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:40:00 INFO  epoch 18 training [time: 6.49s, train loss: 50.6742]
+Sun 23 Nov 2025 21:40:07 INFO  epoch 19 training [time: 6.59s, train loss: 49.9425]
+Sun 23 Nov 2025 21:40:07 INFO  epoch 19 evaluating [time: 0.56s, valid_score: 0.309700]
+Sun 23 Nov 2025 21:40:07 INFO  valid result: 
+recall@10 : 0.1026    mrr@10 : 0.3097    ndcg@10 : 0.1568    hit@10 : 0.6111    precision@10 : 0.1245
+Sun 23 Nov 2025 21:40:07 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:40:14 INFO  epoch 20 training [time: 6.56s, train loss: 49.2476]
+Sun 23 Nov 2025 21:40:20 INFO  epoch 21 training [time: 6.25s, train loss: 48.5198]
+Sun 23 Nov 2025 21:40:21 INFO  epoch 21 evaluating [time: 0.58s, valid_score: 0.317300]
+Sun 23 Nov 2025 21:40:21 INFO  valid result: 
+recall@10 : 0.1057    mrr@10 : 0.3173    ndcg@10 : 0.1621    hit@10 : 0.6252    precision@10 : 0.1292
+Sun 23 Nov 2025 21:40:21 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:40:27 INFO  epoch 22 training [time: 6.26s, train loss: 47.9372]
+Sun 23 Nov 2025 21:40:33 INFO  epoch 23 training [time: 6.29s, train loss: 47.1211]
+Sun 23 Nov 2025 21:40:34 INFO  epoch 23 evaluating [time: 0.56s, valid_score: 0.325700]
+Sun 23 Nov 2025 21:40:34 INFO  valid result: 
+recall@10 : 0.1096    mrr@10 : 0.3257    ndcg@10 : 0.1667    hit@10 : 0.6344    precision@10 : 0.1325
+Sun 23 Nov 2025 21:40:34 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:40:40 INFO  epoch 24 training [time: 6.43s, train loss: 46.6565]
+Sun 23 Nov 2025 21:40:47 INFO  epoch 25 training [time: 6.33s, train loss: 45.9498]
+Sun 23 Nov 2025 21:40:47 INFO  epoch 25 evaluating [time: 0.57s, valid_score: 0.331800]
+Sun 23 Nov 2025 21:40:47 INFO  valid result: 
+recall@10 : 0.1121    mrr@10 : 0.3318    ndcg@10 : 0.1703    hit@10 : 0.6416    precision@10 : 0.1352
+Sun 23 Nov 2025 21:40:47 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:40:53 INFO  epoch 26 training [time: 5.78s, train loss: 45.2813]
+Sun 23 Nov 2025 21:40:59 INFO  epoch 27 training [time: 5.65s, train loss: 45.0242]
+Sun 23 Nov 2025 21:40:59 INFO  epoch 27 evaluating [time: 0.53s, valid_score: 0.335300]
+Sun 23 Nov 2025 21:40:59 INFO  valid result: 
+recall@10 : 0.115    mrr@10 : 0.3353    ndcg@10 : 0.1733    hit@10 : 0.6488    precision@10 : 0.1375
+Sun 23 Nov 2025 21:41:00 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:41:05 INFO  epoch 28 training [time: 5.76s, train loss: 44.4534]
+Sun 23 Nov 2025 21:41:11 INFO  epoch 29 training [time: 5.68s, train loss: 44.2413]
+Sun 23 Nov 2025 21:41:12 INFO  epoch 29 evaluating [time: 0.55s, valid_score: 0.340200]
+Sun 23 Nov 2025 21:41:12 INFO  valid result: 
+recall@10 : 0.1167    mrr@10 : 0.3402    ndcg@10 : 0.1759    hit@10 : 0.6556    precision@10 : 0.1394
+Sun 23 Nov 2025 21:41:12 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:41:17 INFO  epoch 30 training [time: 5.54s, train loss: 43.8133]
+Sun 23 Nov 2025 21:41:23 INFO  epoch 31 training [time: 5.82s, train loss: 43.4000]
+Sun 23 Nov 2025 21:41:24 INFO  epoch 31 evaluating [time: 0.52s, valid_score: 0.342600]
+Sun 23 Nov 2025 21:41:24 INFO  valid result: 
+recall@10 : 0.1186    mrr@10 : 0.3426    ndcg@10 : 0.1777    hit@10 : 0.6604    precision@10 : 0.1409
+Sun 23 Nov 2025 21:41:24 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:41:30 INFO  epoch 32 training [time: 5.84s, train loss: 43.0598]
+Sun 23 Nov 2025 21:41:35 INFO  epoch 33 training [time: 5.57s, train loss: 42.7060]
+Sun 23 Nov 2025 21:41:36 INFO  epoch 33 evaluating [time: 0.55s, valid_score: 0.345400]
+Sun 23 Nov 2025 21:41:36 INFO  valid result: 
+recall@10 : 0.1207    mrr@10 : 0.3454    ndcg@10 : 0.1798    hit@10 : 0.6657    precision@10 : 0.1424
+Sun 23 Nov 2025 21:41:36 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:41:42 INFO  epoch 34 training [time: 5.71s, train loss: 42.4623]
+Sun 23 Nov 2025 21:41:47 INFO  epoch 35 training [time: 5.85s, train loss: 42.0758]
+Sun 23 Nov 2025 21:41:48 INFO  epoch 35 evaluating [time: 0.55s, valid_score: 0.348500]
+Sun 23 Nov 2025 21:41:48 INFO  valid result: 
+recall@10 : 0.1223    mrr@10 : 0.3485    ndcg@10 : 0.1814    hit@10 : 0.6702    precision@10 : 0.1436
+Sun 23 Nov 2025 21:41:48 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:41:54 INFO  epoch 36 training [time: 5.83s, train loss: 41.9460]
+Sun 23 Nov 2025 21:42:00 INFO  epoch 37 training [time: 5.64s, train loss: 41.3550]
+Sun 23 Nov 2025 21:42:00 INFO  epoch 37 evaluating [time: 0.55s, valid_score: 0.351200]
+Sun 23 Nov 2025 21:42:00 INFO  valid result: 
+recall@10 : 0.124    mrr@10 : 0.3512    ndcg@10 : 0.1834    hit@10 : 0.6732    precision@10 : 0.1452
+Sun 23 Nov 2025 21:42:00 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:42:06 INFO  epoch 38 training [time: 5.89s, train loss: 41.3316]
+Sun 23 Nov 2025 21:42:12 INFO  epoch 39 training [time: 5.74s, train loss: 41.1105]
+Sun 23 Nov 2025 21:42:12 INFO  epoch 39 evaluating [time: 0.53s, valid_score: 0.350900]
+Sun 23 Nov 2025 21:42:12 INFO  valid result: 
+recall@10 : 0.1253    mrr@10 : 0.3509    ndcg@10 : 0.1843    hit@10 : 0.6767    precision@10 : 0.1461
+Sun 23 Nov 2025 21:42:18 INFO  epoch 40 training [time: 5.69s, train loss: 40.9203]
+Sun 23 Nov 2025 21:42:24 INFO  epoch 41 training [time: 5.72s, train loss: 40.6657]
+Sun 23 Nov 2025 21:42:24 INFO  epoch 41 evaluating [time: 0.55s, valid_score: 0.351600]
+Sun 23 Nov 2025 21:42:24 INFO  valid result: 
+recall@10 : 0.1279    mrr@10 : 0.3516    ndcg@10 : 0.1865    hit@10 : 0.6825    precision@10 : 0.1487
+Sun 23 Nov 2025 21:42:25 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:42:30 INFO  epoch 42 training [time: 5.70s, train loss: 40.3827]
+Sun 23 Nov 2025 21:42:36 INFO  epoch 43 training [time: 5.70s, train loss: 40.1582]
+Sun 23 Nov 2025 21:42:36 INFO  epoch 43 evaluating [time: 0.56s, valid_score: 0.355300]
+Sun 23 Nov 2025 21:42:36 INFO  valid result: 
+recall@10 : 0.1291    mrr@10 : 0.3553    ndcg@10 : 0.1882    hit@10 : 0.6838    precision@10 : 0.1495
+Sun 23 Nov 2025 21:42:37 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:42:42 INFO  epoch 44 training [time: 5.73s, train loss: 40.0288]
+Sun 23 Nov 2025 21:42:48 INFO  epoch 45 training [time: 5.76s, train loss: 39.7068]
+Sun 23 Nov 2025 21:42:49 INFO  epoch 45 evaluating [time: 0.55s, valid_score: 0.357000]
+Sun 23 Nov 2025 21:42:49 INFO  valid result: 
+recall@10 : 0.1303    mrr@10 : 0.357    ndcg@10 : 0.1898    hit@10 : 0.6877    precision@10 : 0.1509
+Sun 23 Nov 2025 21:42:49 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:42:55 INFO  epoch 46 training [time: 5.84s, train loss: 39.4173]
+Sun 23 Nov 2025 21:43:00 INFO  epoch 47 training [time: 5.78s, train loss: 39.3102]
+Sun 23 Nov 2025 21:43:01 INFO  epoch 47 evaluating [time: 0.54s, valid_score: 0.358000]
+Sun 23 Nov 2025 21:43:01 INFO  valid result: 
+recall@10 : 0.131    mrr@10 : 0.358    ndcg@10 : 0.1906    hit@10 : 0.6909    precision@10 : 0.1516
+Sun 23 Nov 2025 21:43:01 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:43:07 INFO  epoch 48 training [time: 5.79s, train loss: 39.1584]
+Sun 23 Nov 2025 21:43:12 INFO  epoch 49 training [time: 5.54s, train loss: 38.7204]
+Sun 23 Nov 2025 21:43:13 INFO  epoch 49 evaluating [time: 0.52s, valid_score: 0.359700]
+Sun 23 Nov 2025 21:43:13 INFO  valid result: 
+recall@10 : 0.1317    mrr@10 : 0.3597    ndcg@10 : 0.1918    hit@10 : 0.6929    precision@10 : 0.1523
+Sun 23 Nov 2025 21:43:13 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:43:19 INFO  epoch 50 training [time: 5.58s, train loss: 38.7729]
+Sun 23 Nov 2025 21:43:24 INFO  epoch 51 training [time: 5.72s, train loss: 38.6010]
+Sun 23 Nov 2025 21:43:25 INFO  epoch 51 evaluating [time: 0.54s, valid_score: 0.362600]
+Sun 23 Nov 2025 21:43:25 INFO  valid result: 
+recall@10 : 0.1337    mrr@10 : 0.3626    ndcg@10 : 0.1935    hit@10 : 0.6978    precision@10 : 0.1536
+Sun 23 Nov 2025 21:43:25 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:43:31 INFO  epoch 52 training [time: 5.68s, train loss: 38.4264]
+Sun 23 Nov 2025 21:43:36 INFO  epoch 53 training [time: 5.59s, train loss: 38.2745]
+Sun 23 Nov 2025 21:43:37 INFO  epoch 53 evaluating [time: 0.53s, valid_score: 0.360900]
+Sun 23 Nov 2025 21:43:37 INFO  valid result: 
+recall@10 : 0.1346    mrr@10 : 0.3609    ndcg@10 : 0.1939    hit@10 : 0.6974    precision@10 : 0.154
+Sun 23 Nov 2025 21:43:43 INFO  epoch 54 training [time: 5.67s, train loss: 38.0253]
+Sun 23 Nov 2025 21:43:48 INFO  epoch 55 training [time: 5.83s, train loss: 37.8881]
+Sun 23 Nov 2025 21:43:49 INFO  epoch 55 evaluating [time: 0.53s, valid_score: 0.361900]
+Sun 23 Nov 2025 21:43:49 INFO  valid result: 
+recall@10 : 0.1358    mrr@10 : 0.3619    ndcg@10 : 0.1952    hit@10 : 0.7007    precision@10 : 0.1553
+Sun 23 Nov 2025 21:43:55 INFO  epoch 56 training [time: 5.59s, train loss: 37.6149]
+Sun 23 Nov 2025 21:44:00 INFO  epoch 57 training [time: 5.74s, train loss: 37.4862]
+Sun 23 Nov 2025 21:44:01 INFO  epoch 57 evaluating [time: 0.54s, valid_score: 0.362000]
+Sun 23 Nov 2025 21:44:01 INFO  valid result: 
+recall@10 : 0.1359    mrr@10 : 0.362    ndcg@10 : 0.1953    hit@10 : 0.7028    precision@10 : 0.1553
+Sun 23 Nov 2025 21:44:07 INFO  epoch 58 training [time: 5.78s, train loss: 37.2617]
+Sun 23 Nov 2025 21:44:12 INFO  epoch 59 training [time: 5.75s, train loss: 37.3531]
+Sun 23 Nov 2025 21:44:13 INFO  epoch 59 evaluating [time: 0.53s, valid_score: 0.361200]
+Sun 23 Nov 2025 21:44:13 INFO  valid result: 
+recall@10 : 0.1368    mrr@10 : 0.3612    ndcg@10 : 0.1961    hit@10 : 0.7045    precision@10 : 0.1562
+Sun 23 Nov 2025 21:44:19 INFO  epoch 60 training [time: 5.84s, train loss: 37.2450]
+Sun 23 Nov 2025 21:44:24 INFO  epoch 61 training [time: 5.66s, train loss: 36.9174]
+Sun 23 Nov 2025 21:44:25 INFO  epoch 61 evaluating [time: 0.55s, valid_score: 0.362700]
+Sun 23 Nov 2025 21:44:25 INFO  valid result: 
+recall@10 : 0.1382    mrr@10 : 0.3627    ndcg@10 : 0.1969    hit@10 : 0.7066    precision@10 : 0.1566
+Sun 23 Nov 2025 21:44:25 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:44:31 INFO  epoch 62 training [time: 5.61s, train loss: 36.7541]
+Sun 23 Nov 2025 21:44:36 INFO  epoch 63 training [time: 5.75s, train loss: 36.7420]
+Sun 23 Nov 2025 21:44:37 INFO  epoch 63 evaluating [time: 0.54s, valid_score: 0.364100]
+Sun 23 Nov 2025 21:44:37 INFO  valid result: 
+recall@10 : 0.1386    mrr@10 : 0.3641    ndcg@10 : 0.1978    hit@10 : 0.7058    precision@10 : 0.157
+Sun 23 Nov 2025 21:44:37 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:44:43 INFO  epoch 64 training [time: 5.78s, train loss: 36.5728]
+Sun 23 Nov 2025 21:44:49 INFO  epoch 65 training [time: 5.85s, train loss: 36.4018]
+Sun 23 Nov 2025 21:44:49 INFO  epoch 65 evaluating [time: 0.61s, valid_score: 0.363700]
+Sun 23 Nov 2025 21:44:49 INFO  valid result: 
+recall@10 : 0.1392    mrr@10 : 0.3637    ndcg@10 : 0.1981    hit@10 : 0.7079    precision@10 : 0.157
+Sun 23 Nov 2025 21:44:55 INFO  epoch 66 training [time: 6.02s, train loss: 36.2510]
+Sun 23 Nov 2025 21:45:01 INFO  epoch 67 training [time: 6.09s, train loss: 36.0169]
+Sun 23 Nov 2025 21:45:02 INFO  epoch 67 evaluating [time: 0.54s, valid_score: 0.365900]
+Sun 23 Nov 2025 21:45:02 INFO  valid result: 
+recall@10 : 0.1393    mrr@10 : 0.3659    ndcg@10 : 0.1987    hit@10 : 0.7098    precision@10 : 0.1575
+Sun 23 Nov 2025 21:45:02 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:45:08 INFO  epoch 68 training [time: 5.68s, train loss: 36.0930]
+Sun 23 Nov 2025 21:45:14 INFO  epoch 69 training [time: 5.81s, train loss: 35.8522]
+Sun 23 Nov 2025 21:45:14 INFO  epoch 69 evaluating [time: 0.61s, valid_score: 0.366700]
+Sun 23 Nov 2025 21:45:14 INFO  valid result: 
+recall@10 : 0.1387    mrr@10 : 0.3667    ndcg@10 : 0.1988    hit@10 : 0.7088    precision@10 : 0.1576
+Sun 23 Nov 2025 21:45:14 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:45:20 INFO  epoch 70 training [time: 5.76s, train loss: 35.9295]
+Sun 23 Nov 2025 21:45:26 INFO  epoch 71 training [time: 5.77s, train loss: 35.5206]
+Sun 23 Nov 2025 21:45:26 INFO  epoch 71 evaluating [time: 0.59s, valid_score: 0.367300]
+Sun 23 Nov 2025 21:45:26 INFO  valid result: 
+recall@10 : 0.1411    mrr@10 : 0.3673    ndcg@10 : 0.1997    hit@10 : 0.7131    precision@10 : 0.158
+Sun 23 Nov 2025 21:45:27 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:45:32 INFO  epoch 72 training [time: 5.85s, train loss: 35.4832]
+Sun 23 Nov 2025 21:45:38 INFO  epoch 73 training [time: 5.86s, train loss: 35.4120]
+Sun 23 Nov 2025 21:45:39 INFO  epoch 73 evaluating [time: 0.53s, valid_score: 0.367400]
+Sun 23 Nov 2025 21:45:39 INFO  valid result: 
+recall@10 : 0.1401    mrr@10 : 0.3674    ndcg@10 : 0.1992    hit@10 : 0.7121    precision@10 : 0.1573
+Sun 23 Nov 2025 21:45:39 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:45:45 INFO  epoch 74 training [time: 5.82s, train loss: 35.4092]
+Sun 23 Nov 2025 21:45:51 INFO  epoch 75 training [time: 6.69s, train loss: 35.1944]
+Sun 23 Nov 2025 21:45:52 INFO  epoch 75 evaluating [time: 0.55s, valid_score: 0.367300]
+Sun 23 Nov 2025 21:45:52 INFO  valid result: 
+recall@10 : 0.1414    mrr@10 : 0.3673    ndcg@10 : 0.1997    hit@10 : 0.7139    precision@10 : 0.1576
+Sun 23 Nov 2025 21:45:58 INFO  epoch 76 training [time: 6.21s, train loss: 35.1501]
+Sun 23 Nov 2025 21:46:04 INFO  epoch 77 training [time: 6.01s, train loss: 34.9967]
+Sun 23 Nov 2025 21:46:05 INFO  epoch 77 evaluating [time: 0.53s, valid_score: 0.368200]
+Sun 23 Nov 2025 21:46:05 INFO  valid result: 
+recall@10 : 0.1422    mrr@10 : 0.3682    ndcg@10 : 0.2005    hit@10 : 0.7157    precision@10 : 0.1583
+Sun 23 Nov 2025 21:46:05 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:46:11 INFO  epoch 78 training [time: 5.78s, train loss: 34.8145]
+Sun 23 Nov 2025 21:46:17 INFO  epoch 79 training [time: 5.92s, train loss: 34.7546]
+Sun 23 Nov 2025 21:46:17 INFO  epoch 79 evaluating [time: 0.54s, valid_score: 0.369500]
+Sun 23 Nov 2025 21:46:17 INFO  valid result: 
+recall@10 : 0.1418    mrr@10 : 0.3695    ndcg@10 : 0.2007    hit@10 : 0.7147    precision@10 : 0.1582
+Sun 23 Nov 2025 21:46:17 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:46:23 INFO  epoch 80 training [time: 5.93s, train loss: 34.6865]
+Sun 23 Nov 2025 21:46:29 INFO  epoch 81 training [time: 6.06s, train loss: 34.4556]
+Sun 23 Nov 2025 21:46:30 INFO  epoch 81 evaluating [time: 0.55s, valid_score: 0.369200]
+Sun 23 Nov 2025 21:46:30 INFO  valid result: 
+recall@10 : 0.1416    mrr@10 : 0.3692    ndcg@10 : 0.2007    hit@10 : 0.7151    precision@10 : 0.1583
+Sun 23 Nov 2025 21:46:35 INFO  epoch 82 training [time: 5.68s, train loss: 34.4293]
+Sun 23 Nov 2025 21:46:42 INFO  epoch 83 training [time: 6.43s, train loss: 34.1730]
+Sun 23 Nov 2025 21:46:42 INFO  epoch 83 evaluating [time: 0.58s, valid_score: 0.371800]
+Sun 23 Nov 2025 21:46:42 INFO  valid result: 
+recall@10 : 0.1411    mrr@10 : 0.3718    ndcg@10 : 0.2012    hit@10 : 0.7159    precision@10 : 0.1583
+Sun 23 Nov 2025 21:46:43 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:46:49 INFO  epoch 84 training [time: 6.27s, train loss: 34.1563]
+Sun 23 Nov 2025 21:46:55 INFO  epoch 85 training [time: 6.05s, train loss: 34.0988]
+Sun 23 Nov 2025 21:46:55 INFO  epoch 85 evaluating [time: 0.46s, valid_score: 0.373600]
+Sun 23 Nov 2025 21:46:55 INFO  valid result: 
+recall@10 : 0.1422    mrr@10 : 0.3736    ndcg@10 : 0.2022    hit@10 : 0.7166    precision@10 : 0.1587
+Sun 23 Nov 2025 21:46:55 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:47:01 INFO  epoch 86 training [time: 5.55s, train loss: 34.0617]
+Sun 23 Nov 2025 21:47:07 INFO  epoch 87 training [time: 6.09s, train loss: 33.8325]
+Sun 23 Nov 2025 21:47:08 INFO  epoch 87 evaluating [time: 0.51s, valid_score: 0.371600]
+Sun 23 Nov 2025 21:47:08 INFO  valid result: 
+recall@10 : 0.143    mrr@10 : 0.3716    ndcg@10 : 0.202    hit@10 : 0.7184    precision@10 : 0.1587
+Sun 23 Nov 2025 21:47:13 INFO  epoch 88 training [time: 5.78s, train loss: 33.7938]
+Sun 23 Nov 2025 21:47:20 INFO  epoch 89 training [time: 6.24s, train loss: 33.6623]
+Sun 23 Nov 2025 21:47:20 INFO  epoch 89 evaluating [time: 0.56s, valid_score: 0.371300]
+Sun 23 Nov 2025 21:47:20 INFO  valid result: 
+recall@10 : 0.1437    mrr@10 : 0.3713    ndcg@10 : 0.2023    hit@10 : 0.7202    precision@10 : 0.1591
+Sun 23 Nov 2025 21:47:27 INFO  epoch 90 training [time: 6.65s, train loss: 33.5003]
+Sun 23 Nov 2025 21:47:33 INFO  epoch 91 training [time: 6.37s, train loss: 33.4633]
+Sun 23 Nov 2025 21:47:34 INFO  epoch 91 evaluating [time: 0.55s, valid_score: 0.373400]
+Sun 23 Nov 2025 21:47:34 INFO  valid result: 
+recall@10 : 0.1431    mrr@10 : 0.3734    ndcg@10 : 0.2026    hit@10 : 0.7194    precision@10 : 0.1593
+Sun 23 Nov 2025 21:47:40 INFO  epoch 92 training [time: 6.53s, train loss: 33.3709]
+Sun 23 Nov 2025 21:47:47 INFO  epoch 93 training [time: 6.24s, train loss: 33.3908]
+Sun 23 Nov 2025 21:47:47 INFO  epoch 93 evaluating [time: 0.55s, valid_score: 0.373300]
+Sun 23 Nov 2025 21:47:47 INFO  valid result: 
+recall@10 : 0.1431    mrr@10 : 0.3733    ndcg@10 : 0.2026    hit@10 : 0.7199    precision@10 : 0.159
+Sun 23 Nov 2025 21:47:53 INFO  epoch 94 training [time: 6.15s, train loss: 33.2104]
+Sun 23 Nov 2025 21:48:00 INFO  epoch 95 training [time: 6.50s, train loss: 33.0600]
+Sun 23 Nov 2025 21:48:00 INFO  epoch 95 evaluating [time: 0.57s, valid_score: 0.373800]
+Sun 23 Nov 2025 21:48:00 INFO  valid result: 
+recall@10 : 0.1431    mrr@10 : 0.3738    ndcg@10 : 0.203    hit@10 : 0.7194    precision@10 : 0.1595
+Sun 23 Nov 2025 21:48:00 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:48:07 INFO  epoch 96 training [time: 6.58s, train loss: 33.1163]
+Sun 23 Nov 2025 21:48:13 INFO  epoch 97 training [time: 6.40s, train loss: 32.8273]
+Sun 23 Nov 2025 21:48:14 INFO  epoch 97 evaluating [time: 0.56s, valid_score: 0.374600]
+Sun 23 Nov 2025 21:48:14 INFO  valid result: 
+recall@10 : 0.1432    mrr@10 : 0.3746    ndcg@10 : 0.2033    hit@10 : 0.7227    precision@10 : 0.1595
+Sun 23 Nov 2025 21:48:14 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:48:20 INFO  epoch 98 training [time: 6.44s, train loss: 32.7176]
+Sun 23 Nov 2025 21:48:27 INFO  epoch 99 training [time: 6.24s, train loss: 32.7872]
+Sun 23 Nov 2025 21:48:27 INFO  epoch 99 evaluating [time: 0.58s, valid_score: 0.375100]
+Sun 23 Nov 2025 21:48:27 INFO  valid result: 
+recall@10 : 0.1443    mrr@10 : 0.3751    ndcg@10 : 0.2038    hit@10 : 0.7219    precision@10 : 0.16
+Sun 23 Nov 2025 21:48:27 INFO  Saving current: saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:48:27 INFO  Loading model structure and parameters from saved/LightGCN-Nov-23-2025_21-37-57.pth
+Sun 23 Nov 2025 21:48:28 INFO  count    1435.000000
+mean       42.090592
+std        94.379025
+min         1.000000
+25%         2.000000
+50%         9.000000
+75%        36.000000
+max      1062.000000
+dtype: float64
+Sun 23 Nov 2025 21:48:29 INFO  The running environment of this training is as follows:
++-------------+-----------------+
+| Environment |      Usage      |
++=============+=================+
+| CPU         |     30.40 %     |
++-------------+-----------------+
+| GPU         | 0.27 G/47.53 G  |
++-------------+-----------------+
+| Memory      | 1.83 G/251.48 G |
++-------------+-----------------+
+Sun 23 Nov 2025 21:48:29 INFO  best valid : OrderedDict([('recall@10', 0.1443), ('mrr@10', 0.3751), ('ndcg@10', 0.2038), ('hit@10', 0.7219), ('precision@10', 0.16)])
+Sun 23 Nov 2025 21:48:29 INFO  test result: OrderedDict([('recall@10', 0.1620183940397351), ('mrr@10', 0.4487469536423841), ('ndcg@10', 0.25903043046357616), ('hit@10', 0.7408940397350994), ('precision@10', 0.20291390728476819)])
