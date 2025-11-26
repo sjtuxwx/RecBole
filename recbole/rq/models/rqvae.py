@@ -61,12 +61,13 @@ class RQVAE(nn.Module):
                                        dropout=self.dropout_prob,bn=self.bn,
                                        activation='sigmoid'
                                        )
-
+        self.W_gate = nn.Linear(self.in_dim, self.in_dim, bias=True)
     def forward(self, x, use_sk=True):
         ipt = x
         x = self.encoder(x)
         x_q, rq_loss, indices = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
+        
 
         return out, rq_loss, indices
 
@@ -78,13 +79,19 @@ class RQVAE(nn.Module):
 
     def compute_loss(self, out, quant_loss, xs=None):
 
+        # if self.loss_type == 'mse':
+        #     loss_recon = F.mse_loss(out, xs, reduction='mean')
+        # elif self.loss_type == 'l1':
+        #     loss_recon = F.l1_loss(out, xs, reduction='mean')
+        # else:
+        #     raise ValueError('incompatible loss type')
+        gate = torch.sigmoid(self.W_gate(xs))
         if self.loss_type == 'mse':
-            loss_recon = F.mse_loss(out, xs, reduction='mean')
-        elif self.loss_type == 'l1':
-            loss_recon = F.l1_loss(out, xs, reduction='mean')
-        else:
-            raise ValueError('incompatible loss type')
-
+            loss_recon = gate * ((out - xs) ** 2) * (1/2)
+            loss_recon = loss_recon.mean()
+        if self.loss_type == 'l1':
+            loss_recon = gate * (out - xs).abs()
+            loss_recon = loss_recon.mean()
         loss_total = loss_recon + self.quant_loss_weight * quant_loss
 
         return loss_total, loss_recon

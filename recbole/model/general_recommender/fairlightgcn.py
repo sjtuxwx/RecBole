@@ -311,7 +311,7 @@ class FairLightGCN(GeneralRecommender):
         item_side_info = self.process_item_side_info(interaction)
         out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model, item_side_info)
 
-        return loss + 0.5 * rq_loss
+        return loss + 0.25 * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
