@@ -107,9 +107,9 @@ class FairLightGCN(GeneralRecommender):
         self.gen_extra_embedding()
 
         self.rq_model = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1),
-                  num_emb_list=[256, 256, 256],
-                  e_dim=32,
-                  layers=[2048, 1024, 512, 256, 128, 64],
+                  num_emb_list=[8, 8, 8],
+                  e_dim=16,
+                  layers=[64, 32],
                   dropout_prob=0,
                   bn=False,
                   loss_type='mse',
@@ -145,8 +145,9 @@ class FairLightGCN(GeneralRecommender):
 
     def forward_rq_item_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
+        rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss, indices
+        return out, rq_loss_total, indices
 
     def process_item_side_info(self, interaction):
         res = []
@@ -305,12 +306,12 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
+        loss = mf_loss + self.reg_weight * reg_loss + 0 * cl_loss
 
         item_side_info = self.process_item_side_info(interaction)
         out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model, item_side_info)
 
-        return loss + 10000000 * rq_loss
+        return loss + 0.5 * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
