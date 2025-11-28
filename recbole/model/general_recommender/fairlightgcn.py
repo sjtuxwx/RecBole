@@ -106,7 +106,21 @@ class FairLightGCN(GeneralRecommender):
         #     self.eps = 0.2
         self.gen_extra_embedding()
 
-        self.rq_model = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1),
+        self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1),
+                  num_emb_list=[8, 8, 8],
+                  e_dim=16,
+                  layers=[64, 32],
+                  dropout_prob=0,
+                  bn=False,
+                  loss_type='mse',
+                  quant_loss_weight=1,
+                  beta=0.25,
+                  kmeans_init=True,
+                  kmeans_iters=100,
+                  sk_epsilons=[0.0, 0.0, 0.0],
+                  sk_iters=50,
+                  )
+        self.rq_model_user = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['user']) + 1),
                   num_emb_list=[8, 8, 8],
                   e_dim=16,
                   layers=[64, 32],
@@ -128,6 +142,11 @@ class FairLightGCN(GeneralRecommender):
                 num_embeddings=self.eInfo['item'][extra_info], embedding_dim=self.latent_dim, device=self.device
             )
             self.item_extra_embedding[extra_info] =  aa
+        for extra_info in self.eInfo['user']:
+            aa = torch.nn.Embedding(
+                num_embeddings=self.eInfo['user'][extra_info], embedding_dim=self.latent_dim, device=self.device
+            )
+            self.user_extra_embedding[extra_info] =  aa
     def extra_embedding_forward(self, extra_info, item):
         embedding_layer = self.item_extra_embedding[extra_info]
         self.item_embedding_name = []
@@ -148,6 +167,11 @@ class FairLightGCN(GeneralRecommender):
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
         return out, rq_loss_total, indices
+    def forward_rq_user_epoch(self, rq_model, data):
+        out, rq_loss, indices = rq_model(data)
+        rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
+
+        return out, rq_loss_total, indices
 
     def process_item_side_info(self, interaction):
         res = []
@@ -157,6 +181,17 @@ class FairLightGCN(GeneralRecommender):
             res.append(emb)
         res.append(self.item_embedding(interaction[self.ITEM_ID]))
         return torch.concat(res, dim=-1)
+
+    def process_user_side_info(self, interaction):
+        res = []
+        for extra_info in self.eInfo['user']:
+            user = interaction[extra_info]
+            emb = self.extra_embedding_forward(extra_info, user)
+            res.append(emb)
+        res.append(self.user_embedding(interaction[self.USER_ID]))
+        return torch.concat(res, dim=-1)
+
+
 
     def get_norm_adj_mat(self):
         r"""Get the normalized interaction matrix of users and items.
@@ -288,9 +323,11 @@ class FairLightGCN(GeneralRecommender):
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         item_side_info = self.process_item_side_info(interaction)
-        out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model, item_side_info)
+        user_side_info = self.process_user_side_info(interaction)
+        out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
 
-        return loss + 0.5 * rq_loss
+        return loss + 0.5 * (rq_loss + rq_loss_user) / 2
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
