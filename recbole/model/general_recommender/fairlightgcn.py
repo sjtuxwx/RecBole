@@ -137,6 +137,7 @@ class FairLightGCN(GeneralRecommender):
 
     def gen_extra_embedding(self):
         self.item_extra_embedding = {}
+        self.user_extra_embedding = {}
         for extra_info in self.eInfo['item']:
             aa = torch.nn.Embedding(
                 num_embeddings=self.eInfo['item'][extra_info], embedding_dim=self.latent_dim, device=self.device
@@ -153,6 +154,20 @@ class FairLightGCN(GeneralRecommender):
         emb = embedding_layer(item)
         if item.dim() == 2:
             mask = (item != 0).unsqueeze(-1)  # [batch_size, seq_len, 1]
+            emb_masked = emb * mask  # [batch_size, seq_len, embedding_dim]
+            valid_count = mask.sum(dim=1)  # [batch_size, 1]
+            mean_emb = emb_masked.sum(dim=1) / valid_count.clamp(min=1)  # [batch_size, embedding_dim]
+            return mean_emb
+        else:
+            # 一维时直接返回 embedding
+            return emb
+
+    def extra_embedding_forward_user(self, extra_info, user):
+        embedding_layer = self.user_extra_embedding[extra_info]
+        self.user_embedding_name = []
+        emb = embedding_layer(user)
+        if user.dim() == 2:
+            mask = (user != 0).unsqueeze(-1)  # [batch_size, seq_len, 1]
             emb_masked = emb * mask  # [batch_size, seq_len, embedding_dim]
             valid_count = mask.sum(dim=1)  # [batch_size, 1]
             mean_emb = emb_masked.sum(dim=1) / valid_count.clamp(min=1)  # [batch_size, embedding_dim]
@@ -186,7 +201,7 @@ class FairLightGCN(GeneralRecommender):
         res = []
         for extra_info in self.eInfo['user']:
             user = interaction[extra_info]
-            emb = self.extra_embedding_forward(extra_info, user)
+            emb = self.extra_embedding_forward_user(extra_info, user)
             res.append(emb)
         res.append(self.user_embedding(interaction[self.USER_ID]))
         return torch.concat(res, dim=-1)
@@ -275,7 +290,8 @@ class FairLightGCN(GeneralRecommender):
         # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
-        return cl_rate * (user_loss + item_loss) / 2
+        user_loss = 0
+        return cl_rate * (user_loss + item_loss)
 
     def calculate_loss(self, interaction):
         # clear the storage variable when training
