@@ -170,41 +170,19 @@ class FairLightGCN(GeneralRecommender):
         Returns:
             Sparse tensor of the normalized interaction matrix.
         """
-        # build adj matrix
-        A = sp.dok_matrix(
-            (self.n_users + self.n_items, self.n_users + self.n_items), dtype=np.float32
-        )
         inter_M = self.interaction_matrix
-        inter_M_t = self.interaction_matrix.transpose()
-        data_dict = dict(
-            zip(zip(inter_M.row, inter_M.col + self.n_users), [1] * inter_M.nnz)
-        )
-        data_dict.update(
-            dict(
-                zip(
-                    zip(inter_M_t.row + self.n_users, inter_M_t.col),
-                    [1] * inter_M_t.nnz,
-                )
-            )
-        )
-        # A._update(data_dict)
-        # 修复scipy版本兼容性问题：新版本scipy中dok_matrix没有_update方法
-        for (i, j), value in data_dict.items():
-            A[i, j] = value
-        # norm adj matrix
-        sumArr = (A > 0).sum(axis=1)
-        # add epsilon to avoid divide by zero Warning
-        diag = np.array(sumArr.flatten())[0] + 1e-7
-        diag = np.power(diag, -0.5)
-        D = sp.diags(diag)
-        L = D * A * D
-        # covert norm_adj matrix to tensor
+        row = np.concatenate([inter_M.row, inter_M.col + self.n_users])
+        col = np.concatenate([inter_M.col + self.n_users, inter_M.row])
+        data = np.ones(row.shape[0], dtype=np.float32)
+        A = sp.coo_matrix((data, (row, col)), shape=(self.n_users + self.n_items, self.n_users + self.n_items))
+        A.sum_duplicates()
+        deg = np.array(A.tocsr().sum(axis=1)).flatten() + 1e-7
+        D = sp.diags(np.power(deg, -0.5))
+        L = D @ A @ D
         L = sp.coo_matrix(L)
-        row = L.row
-        col = L.col
-        i = torch.LongTensor(np.array([row, col]))
-        data = torch.FloatTensor(L.data)
-        SparseL = torch.sparse.FloatTensor(i, data, torch.Size(L.shape))
+        indices = torch.LongTensor(np.vstack([L.row, L.col]))
+        values = torch.FloatTensor(L.data)
+        SparseL = torch.sparse.FloatTensor(indices, values, torch.Size(L.shape))
         return SparseL
 
     def get_ego_embeddings(self):
@@ -250,16 +228,16 @@ class FairLightGCN(GeneralRecommender):
         # user_loss = InfoNCE(user_view1[user], user_view2[user])
         user_loss = InfoNCE(user_view1[user], user_view2[user])
 
-        # item_loss = InfoNCE(item_view1[item], item_view2[item])
+        item_loss = InfoNCE(item_view1[item], item_view2[item])
 
-        item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
-        item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
+        # item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
+        # item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
 
         # item_loss1 = 0
         # item_loss2 = 0
         user_loss = 0
-        # return cl_rate * item_loss
-        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
+        return cl_rate * item_loss
+        # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
 
@@ -306,12 +284,12 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + 0 * cl_loss
+        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         item_side_info = self.process_item_side_info(interaction)
         out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model, item_side_info)
 
-        return loss + 0.25 * rq_loss
+        return loss + 0.5 * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
