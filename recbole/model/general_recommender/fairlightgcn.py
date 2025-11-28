@@ -235,11 +235,12 @@ class FairLightGCN(GeneralRecommender):
 
         # item_loss1 = 0
         # item_loss2 = 0
-        user_loss = 0
+        # user_loss = 0
         return cl_rate * item_loss
         # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
+        return cl_rate * (user_loss + item_loss) / 2
 
     def calculate_loss(self, interaction):
         # clear the storage variable when training
