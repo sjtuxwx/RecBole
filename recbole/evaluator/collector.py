@@ -197,6 +197,50 @@ class Collector(object):
                 "data.label", interaction[self.label_field].to(self.device)
             )
 
+    def eval_batch_collect_pop_and_unpop(
+        self,
+        scores_tensor: torch.Tensor,
+        interaction,
+        positive_u: torch.Tensor,
+        positive_i: torch.Tensor,
+        pop_i: torch.Tensor,
+        unpop_i: torch.Tensor,
+    ):
+        """Collect the evaluation resource from batched eval data and batched model output.
+        Args:
+            scores_tensor (Torch.Tensor): the output tensor of model with the shape of `(N, )`
+            interaction(Interaction): batched eval data.
+            positive_u(Torch.Tensor): the row index of positive items for each user.
+            positive_i(Torch.Tensor): the positive item id for each user.
+            pop_i(Torch.Tensor): the item id of popular items.
+            unpop_i(Torch.Tensor): the item id of unpopular items.
+        """
+        if self.register.need("rec.topk"):
+
+            _, topk_idx = torch.topk(
+                scores_tensor, max(self.topk), dim=-1
+            )  # n_users x k
+            pos_matrix = torch.zeros_like(scores_tensor, dtype=torch.int)
+            pos_matrix[positive_u, positive_i] = 1
+
+            pop_pos = copy.deepcopy(pos_matrix)
+            pop_pos[:, unpop_i] = 0
+            
+            unpop_pos = copy.deepcopy(pos_matrix)
+            unpop_pos[:, pop_i] = 0
+
+            pop_pos_len = pop_pos.sum(dim=1, keepdim=True)
+            unpop_pos_len = unpop_pos.sum(dim=1, keepdim=True)
+
+            pop_pos_idx = torch.gather(pop_pos, dim=1, index=topk_idx)
+            unpop_pos_idx = torch.gather(unpop_pos, dim=1, index=topk_idx)
+
+            pop_result = torch.cat((pop_pos_idx, pop_pos_len), dim=1)
+            unpop_result = torch.cat((unpop_pos_idx, unpop_pos_len), dim=1)
+            
+            self.data_struct.update_tensor("rec.pop.topk", pop_result)
+            self.data_struct.update_tensor("rec.unpop.topk", unpop_result)
+
     def model_collect(self, model: torch.nn.Module):
         """Collect the evaluation resource from model.
         Args:
@@ -226,7 +270,7 @@ class Collector(object):
         for key in self.data_struct._data_dict:
             self.data_struct._data_dict[key] = self.data_struct._data_dict[key].cpu()
         returned_struct = copy.deepcopy(self.data_struct)
-        for key in ["rec.topk", "rec.meanrank", "rec.score", "rec.items", "data.label"]:
+        for key in ["rec.topk", "rec.meanrank", "rec.score", "rec.items", "data.label", "rec.pop.topk", "rec.unpop.topk"]:
             if key in self.data_struct:
                 del self.data_struct[key]
         return returned_struct

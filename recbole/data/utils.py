@@ -169,8 +169,10 @@ def data_preparation(config, dataset, context):
         train_dataset, valid_dataset, test_dataset = built_datasets
         # raw_train_dataset = train_dataset
         interaction_info = train_dataset.history_item_matrix()[0]
-        context.user_interact = interaction_info
-        context.itempop = train_dataset.history_user_matrix()[2]
+        # context.user_interact = interaction_info
+        context.add_user_interaction(interaction_info)
+        # context.itempop = train_dataset.history_user_matrix()[2]
+        context.add_item_popularity(train_dataset.history_user_matrix()[2])
         train_sampler, valid_sampler, test_sampler = create_samplers(
             config, dataset, built_datasets
         )

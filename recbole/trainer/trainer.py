@@ -46,7 +46,7 @@ from recbole.utils import (
     WandbLogger,
 )
 from torch.nn.parallel import DistributedDataParallel
-
+from recbole.fairness.context import Context
 
 class AbstractTrainer(object):
     r"""Trainer Class is used to manage the training and evaluation processes of recommender system models.
@@ -314,7 +314,7 @@ class Trainer(AbstractTrainer):
         # G2.to(self.device)
         return G1.to(self.device), G2.to(self.device)
 
-    def _valid_epoch(self, valid_data, show_progress=False):
+    def _valid_epoch(self, valid_data, show_progress=False, context: Context = None):
         r"""Valid the model with valid data
 
         Args:
@@ -326,7 +326,7 @@ class Trainer(AbstractTrainer):
             dict: valid result
         """
         valid_result = self.evaluate(
-            valid_data, load_best_model=False, show_progress=show_progress
+            valid_data, load_best_model=False, show_progress=show_progress, context=context
         )
         valid_score = calculate_valid_score(valid_result, self.valid_metric)
         return valid_score, valid_result
@@ -508,7 +508,7 @@ class Trainer(AbstractTrainer):
             if (epoch_idx + 1) % self.eval_step == 0:
                 valid_start_time = time()
                 valid_score, valid_result = self._valid_epoch(
-                    valid_data, show_progress=show_progress
+                    valid_data, show_progress=show_progress, context=context
                 )
 
                 (
@@ -607,7 +607,7 @@ class Trainer(AbstractTrainer):
 
     @torch.no_grad()
     def evaluate(
-        self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False, context: Context = None
     ):
         r"""Evaluate the model based on the eval data.
 
@@ -669,6 +669,9 @@ class Trainer(AbstractTrainer):
             self.eval_collector.eval_batch_collect(
                 scores, interaction, positive_u, positive_i
             )
+            self.eval_collector.eval_batch_collect_pop_and_unpop(
+                scores, interaction, positive_u, positive_i, context.pop_item, context.unpop_item
+            )
         self.eval_collector.model_collect(self.model)
         struct = self.eval_collector.get_data_struct()
         result = self.evaluator.evaluate(struct)
@@ -680,7 +683,7 @@ class Trainer(AbstractTrainer):
 
     @torch.no_grad()
     def evaluate_by_single_user(
-        self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False, context: Context = None
     ):
     
         if not eval_data:
@@ -729,6 +732,9 @@ class Trainer(AbstractTrainer):
                 )
             self.eval_collector.eval_batch_collect(
                 scores, interaction, positive_u, positive_i
+            )
+            self.eval_collector.eval_batch_collect_pop_and_unpop(
+                scores, interaction, positive_u, positive_i, context.pop_item, context.unpop_item
             )
         self.eval_collector.model_collect(self.model)
         struct = self.eval_collector.get_data_struct()

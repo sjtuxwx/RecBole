@@ -55,14 +55,28 @@ class Hit(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
+
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
+        
         metric_dict = self.topk_result("hit", result)
+        metric_dict.update(self.topk_result("hit", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("hit", user_unpop_result, prefix="unpop"))  
         return metric_dict
     
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
         metric_dict = self.topk_result_with_single_user("hit", result)
+        metric_dict.update(self.topk_result_with_single_user("hit", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("hit", user_unpop_result, prefix="unpop"))
         return metric_dict
 
     def metric_info(self, pos_index):
@@ -87,14 +101,26 @@ class MRR(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
         metric_dict = self.topk_result("mrr", result)
+        metric_dict.update(self.topk_result("mrr", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("mrr", user_unpop_result, prefix="unpop"))
         return metric_dict
     
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
         metric_dict = self.topk_result_with_single_user("mrr", result)
+        metric_dict.update(self.topk_result_with_single_user("mrr", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("mrr", user_unpop_result, prefix="unpop"))
         return metric_dict
 
     def metric_info(self, pos_index):
@@ -131,14 +157,26 @@ class MAP(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result("map", result)
+        metric_dict.update(self.topk_result("map", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("map", user_unpop_result, prefix="unpop"))
         return metric_dict
     
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result_with_single_user("map", result)
+        metric_dict.update(self.topk_result_with_single_user("map", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("map", user_unpop_result, prefix="unpop"))
         return metric_dict
 
     def metric_info(self, pos_index, pos_len):
@@ -170,18 +208,31 @@ class Recall(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result("recall", result)
+        metric_dict.update(self.topk_result("recall", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("recall", user_unpop_result, prefix="unpop"))   
         return metric_dict
 
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result_with_single_user("recall", result)
+        metric_dict.update(self.topk_result_with_single_user("recall", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("recall", user_unpop_result, prefix="unpop"))
         return metric_dict
 
     def metric_info(self, pos_index, pos_len):
-        return np.cumsum(pos_index, axis=1) / pos_len.reshape(-1, 1)
+        result = np.cumsum(pos_index, axis=1) / pos_len.reshape(-1, 1)
+        return np.nan_to_num(result, nan=0.0)
 
 
 class NDCG(TopkMetric):
@@ -203,17 +254,33 @@ class NDCG(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result("ndcg", result)
+        metric_dict.update(self.topk_result("ndcg", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("ndcg", user_unpop_result, prefix="unpop")) 
         return metric_dict
+    
+    # def calculate_metric_by_single_user(self, dataobject):
+    #     pos_index, pos_len = self.used_info(dataobject)
+    #     result = self.metric_info(pos_index, pos_len)
+    #     metric_dict = self.topk_result_with_single_user("ndcg", result)
+    #     return metric_dict
     
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, pos_len = self.used_info(dataobject)
+        user_pop_index, pop_pos_len = self.user_pop_item_info(dataobject)
+        user_unpop_index, unpop_pos_len = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index, pos_len)
+        user_pop_result = self.metric_info(user_pop_index, pop_pos_len)
+        user_unpop_result = self.metric_info(user_unpop_index, unpop_pos_len)
         metric_dict = self.topk_result_with_single_user("ndcg", result)
+        metric_dict.update(self.topk_result_with_single_user("ndcg", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("ndcg", user_unpop_result, prefix="unpop"))
         return metric_dict
-    
-    
 
     def metric_info(self, pos_index, pos_len):
         len_rank = np.full_like(pos_len, pos_index.shape[1])
@@ -251,14 +318,26 @@ class Precision(TopkMetric):
 
     def calculate_metric(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
         metric_dict = self.topk_result("precision", result)
+        metric_dict.update(self.topk_result("precision", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result("precision", user_unpop_result, prefix="unpop"))
         return metric_dict
     
     def calculate_metric_by_single_user(self, dataobject):
         pos_index, _ = self.used_info(dataobject)
+        user_pop_index, _ = self.user_pop_item_info(dataobject)
+        user_unpop_index, _ = self.user_unpop_item_info(dataobject)
         result = self.metric_info(pos_index)
+        user_pop_result = self.metric_info(user_pop_index)
+        user_unpop_result = self.metric_info(user_unpop_index)
         metric_dict = self.topk_result_with_single_user("precision", result)
+        metric_dict.update(self.topk_result_with_single_user("precision", user_pop_result, prefix="pop"))
+        metric_dict.update(self.topk_result_with_single_user("precision", user_unpop_result, prefix="unpop"))
         return metric_dict
 
     def metric_info(self, pos_index):

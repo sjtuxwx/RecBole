@@ -167,7 +167,7 @@ def run_recbole(
         )
     else:
         single_user_result = trainer.evaluate_by_single_user(
-            test_data, load_best_model=saved, show_progress=config["show_progress"]
+            test_data, load_best_model=saved, show_progress=config["show_progress"], context = context
         )
         test_result = OrderedDict()
         for k, v in single_user_result.items():

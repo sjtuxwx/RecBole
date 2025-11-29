@@ -63,8 +63,24 @@ class TopkMetric(AbstractMetric):
         rec_mat = dataobject.get("rec.topk")
         topk_idx, pos_len_list = torch.split(rec_mat, [max(self.topk), 1], dim=1)
         return topk_idx.to(torch.bool).numpy(), pos_len_list.squeeze(-1).numpy()
+    
+    def user_pop_item_info(self, dataobject):
+        """Get the bool matrix indicating whether the corresponding item is positive
+        and number of positive items for each user.
+        """
+        rec_mat = dataobject.get("rec.pop.topk")
+        topk_idx, pos_len_list = torch.split(rec_mat, [max(self.topk), 1], dim=1)
+        return topk_idx.to(torch.bool).numpy(), pos_len_list.squeeze(-1).numpy()
 
-    def topk_result(self, metric, value):
+    def user_unpop_item_info(self, dataobject):
+        """Get the bool matrix indicating whether the corresponding item is positive
+        and number of positive items for each user.
+        """
+        rec_mat = dataobject.get("rec.unpop.topk")
+        topk_idx, pos_len_list = torch.split(rec_mat, [max(self.topk), 1], dim=1)
+        return topk_idx.to(torch.bool).numpy(), pos_len_list.squeeze(-1).numpy()
+
+    def topk_result(self, metric, value, prefix: str = ""):
         """Match the metric value to the `k` and put them in `dictionary` form.
 
         Args:
@@ -75,13 +91,15 @@ class TopkMetric(AbstractMetric):
             dict: metric values required in the configuration.
         """
         metric_dict = {}
+        if prefix:
+            metric = "{}_{}".format(prefix, metric)
         avg_result = value.mean(axis=0)
         for k in self.topk:
             key = "{}@{}".format(metric, k)
             metric_dict[key] = round(avg_result[k - 1], self.decimal_place)
         return metric_dict
     
-    def topk_result_with_single_user(self, metric, value):
+    def topk_result_with_single_user(self, metric, value,  prefix: str = ""):
         """Match the metric value to the `k` and put them in `dictionary` form.
 
         Args:
@@ -93,9 +111,14 @@ class TopkMetric(AbstractMetric):
         """
         metric_dict = {}
         # avg_result = value.mean(axis=0)
+       
         for k in self.topk:
             key = "{}@{}".format(metric, k)
+            if prefix:
+                key = "{}_{}".format(prefix, key)
             metric_dict[key] = value[:, k - 1].round(self.decimal_place)
+        
+
         return metric_dict
 
     def metric_info(self, pos_index, pos_len=None):
