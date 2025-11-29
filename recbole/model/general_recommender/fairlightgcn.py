@@ -278,19 +278,19 @@ class FairLightGCN(GeneralRecommender):
         # user_loss = InfoNCE(user_view1[user], user_view2[user])
         user_loss = InfoNCE(user_view1[user], user_view2[user])
 
-        item_loss = InfoNCE(item_view1[item], item_view2[item])
+        # item_loss = InfoNCE(item_view1[item], item_view2[item])
 
-        # item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
-        # item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
+        item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
+        item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
 
         # item_loss1 = 0
         # item_loss2 = 0
-        # user_loss = 0
-        return cl_rate * item_loss
-        # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
+        user_loss = 0
+        # return cl_rate * item_loss
+        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
-        user_loss = 0
+        # user_loss = 0
         return cl_rate * (user_loss + item_loss)
 
     def calculate_loss(self, interaction):
@@ -341,9 +341,10 @@ class FairLightGCN(GeneralRecommender):
         item_side_info = self.process_item_side_info(interaction)
         user_side_info = self.process_user_side_info(interaction)
         out, rq_loss, indices = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
-        out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
+        # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
 
-        return loss + 0.5 * (rq_loss + rq_loss_user) / 2
+        # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
+        return loss + rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
