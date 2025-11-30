@@ -216,10 +216,10 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices = rq_model(data)
+        out, rq_loss, indices, pop_out = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss_total, indices
+        return out, rq_loss_total, indices, pop_out
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
@@ -379,7 +379,7 @@ class FairLightGCN(GeneralRecommender):
         out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        return loss + self.item_rq_loss_rate * rq_loss + 0.2 *
+        return loss + self.item_rq_loss_rate * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
