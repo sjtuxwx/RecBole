@@ -162,6 +162,7 @@ class Dataset(torch.utils.data.Dataset):
             self._data_filtering()
 
         self._remap_ID_all()
+        self._inject_item_popularity_if_configured()
         self._user_item_feat_preparation()
         self._fill_nan()
         self._set_label_by_threshold()
@@ -1086,6 +1087,49 @@ class Dataset(torch.utils.data.Dataset):
         ]:
             if field in dct:
                 del dct[field]
+
+    def _inject_item_popularity_if_configured(self):
+        """在配置开启时为 item 注入 popularity 特征
+
+        当 `config['load_col']['item']` 包含 `popularity` 时，基于当前 `inter_feat`
+        统计每个 item 的交互次数，并将该统计结果作为数值特征加入到 `item_feat`。
+
+        特征属性：
+        - 类型：FLOAT
+        - 来源：ITEM
+        - 序列长度：1
+        """
+        cfg = self.config.get("load_col", None)
+        if cfg is None:
+            return
+        if "item" not in cfg:
+            return
+        want_pop = False
+        if cfg["item"] == "*":
+            want_pop = True
+        else:
+            try:
+                want_pop = "popularity" in cfg["item"]
+            except Exception:
+                want_pop = False
+        if not want_pop:
+            return
+
+        self._check_field("iid_field")
+
+        if self.item_feat is None:
+            self.item_feat = pd.DataFrame({self.iid_field: np.arange(self.item_num)})
+
+        item_cnt = self.item_counter
+        pop_len = np.zeros(self.item_num, dtype=np.float64)
+        for item_id, cnt in item_cnt.items():
+            if 0 <= item_id < self.item_num:
+                pop_len[item_id] = float(cnt)
+        self.set_field_property("popularity", FeatureType.FLOAT, FeatureSource.ITEM, 1)
+
+        idxs = self.item_feat[self.iid_field].values.astype(np.int64)
+        idxs = np.clip(idxs, 0, len(pop_len) - 1)
+        self.item_feat["popularity"] = pop_len[idxs]
 
     def _filter_inter_by_user_or_item(self):
         """Remove interaction in inter_feat which user or item is not in user_feat or item_feat."""
