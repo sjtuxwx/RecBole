@@ -278,16 +278,16 @@ class FairLightGCN(GeneralRecommender):
         # user_loss = InfoNCE(user_view1[user], user_view2[user])
         user_loss = InfoNCE(user_view1[user], user_view2[user])
 
-        # item_loss = InfoNCE(item_view1[item], item_view2[item])
+        item_loss = InfoNCE(item_view1[item], item_view2[item])
 
-        item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
-        item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
+        # item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
+        # item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
 
         # item_loss1 = 0
         # item_loss2 = 0
         user_loss = 0
         # return cl_rate * item_loss
-        return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
+        # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
         
         # return user_loss + item_loss1 + item_loss2
         # user_loss = 0

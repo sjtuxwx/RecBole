@@ -113,8 +113,8 @@ class GeneralRecommender(AbstractRecommender):
         self.eInfo = {}
         self.eInfo['item'] = {}
         self.eInfo['user'] = {}
-        iitem = config['load_col']['item'] if config['load_col']['item'] else {}
-        iuser = config['load_col']['user'] if config['load_col']['user'] else {}
+        iitem = config['load_col']['item'] if 'item' in config['load_col'].keys() else {}
+        iuser = config['load_col']['user'] if 'user' in config['load_col'].keys() else {}
         for extra_info in iitem:
             if extra_info in dataset.fields():
                 if extra_info == self.ITEM_ID:
