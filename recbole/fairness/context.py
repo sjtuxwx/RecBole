@@ -7,7 +7,7 @@ from recbole.model.init import xavier_normal_initialization
 from recbole.model.loss import BPRLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop
-from .pop_utils import split_by_pop_non_del
+from .pop_utils import split_by_pop_non_del, split_by_pop_ratio
 
 class Context(object):
     def __init__(self, n_users, n_items):
@@ -27,6 +27,6 @@ class Context(object):
         self.user_interact = user_interact
     def add_item_popularity(self, itempop):
         self.itempop = itempop
-        self.unpop_item, self.pop_item = split_by_pop_non_del(
-            torch.arange(self.n_items), self.itempop, with_zero=True
+        self.unpop_item, self.pop_item = split_by_pop_ratio(
+            torch.arange(self.n_items), self.itempop, with_zero=True, ratio=0.2
         )

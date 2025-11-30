@@ -344,7 +344,7 @@ class FairLightGCN(GeneralRecommender):
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
 
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        return loss + rq_loss
+        return loss + 0.0 * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]

@@ -42,6 +42,22 @@ def split_by_pop_non_del(items, itempop, with_zero:bool = True):
         G2.append(items_sorted[half:])
        
         return G1[0], G2[0]
+
+def split_by_pop_ratio(items, itempop, with_zero:bool = True, ratio:float = 0.5):
+        if with_zero:
+            items = items[1:]
+        G1, G2 = [], []
+        
+        # 根据 itempop 值对物品排序
+        pop_vals = itempop[items]  # torch.Tensor
+        sorted_idx = pop_vals.argsort()
+        items_sorted = items[sorted_idx]  # 去掉最冷门的1个
+
+        half = int(items_sorted.shape[0] *(1 - ratio))
+        G1.append(items_sorted[:half])
+        G2.append(items_sorted[half:])
+       
+        return G1[0], G2[0]
     
 def InfoNCE(view1, view2, temperature=0.2):
         view1, view2 = torch.nn.functional.normalize(
