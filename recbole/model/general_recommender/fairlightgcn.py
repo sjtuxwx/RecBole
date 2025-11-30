@@ -23,6 +23,8 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 import torch.nn.functional as F
+from scipy.ndimage import label
+
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import BPRLoss, EmbLoss
@@ -99,7 +101,25 @@ class FairLightGCN(GeneralRecommender):
             self.cl_rate = 0.2
         else:
             self.cl_rate = config['cl_rate']
-        
+
+        if config['item_rq_loss_rate'] is None:
+            self.item_rq_loss_rate = 0.2
+        else:
+            self.item_rq_loss_rate = config['item_rq_loss_rate']
+        if config['pop_rate'] is None:
+            self.pop_rate = 0.2
+        else:
+            self.pop_rate = config['pop_rate']
+
+        if config['item_loss_type'] is None:
+            self.item_loss_type = 'full'
+        else:
+            self.item_loss_type = config['item_loss_type']
+
+        if config['enable_user_loss'] is None:
+            self.enable_user_loss = False
+        else:
+            self.enable_user_loss = config['enable_user_loss']
         # if "eps" in config.keys():
         #     self.eps = config["eps"]
         # else:
@@ -176,6 +196,23 @@ class FairLightGCN(GeneralRecommender):
             # 一维时直接返回 embedding
             return emb
             
+    def get_user_cl_loss_fn(self, user_view1, user_view2):
+        if self.enable_user_loss is False:
+            return 0
+        else:
+            return InfoNCE(user_view1, user_view2)
+    def get_item_cl_loss_fn(self, item_view1, item_view2, item_view1_pop, item_view2_pop, item_view1_unpop, item_view2_unpop):
+        if self.item_loss_type is None:
+            return 0
+        if self.item_loss_type == 'full':
+            return InfoNCE(item_view1, item_view2)
+        if self.item_loss_type == 'loss1':
+            return InfoNCE_i(item_view1_unpop, item_view2_unpop, item_view1_pop, gama=self.beta)
+        if self.item_loss_type == 'loss2':
+            return InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta)
+        if self.item_loss_type == 'loss12':
+            return (self.gama * (InfoNCE_i(item_view1_unpop, item_view2_unpop, item_view1_pop, gama=self.beta)) +
+                    (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
@@ -267,6 +304,12 @@ class FairLightGCN(GeneralRecommender):
         
         return user_all_embeddings, item_all_embeddings
 
+    def fusion_cl_loss(self, user_loss, item_loss):
+        if self.enable_user_loss == False:
+            fusion_loss = item_loss
+        else:
+            fusion_loss = (item_loss + user_loss) / 2
+        return self.cl_rate * fusion_loss
 
     def cl_loss(self, user, item, itempop, cl_rate=0.2, gama=0.2, beta=0.2):
         G1, G2 = split_by_pop(item, itempop)
@@ -276,23 +319,11 @@ class FairLightGCN(GeneralRecommender):
         user_view2, item_view2 = self.forward(perturbed=True)
         # item_view2 = item_view2[item]   
         # user_loss = InfoNCE(user_view1[user], user_view2[user])
-        user_loss = InfoNCE(user_view1[user], user_view2[user])
+        user_loss = self.get_user_cl_loss_fn(user_view1[user], user_view2[user])
+        item_loss = self.get_item_cl_loss_fn(item_view1[item], item_view2[item], item_view1[G2], item_view2[G2], item_view1[G1], item_view2[G1])
 
-        item_loss = InfoNCE(item_view1[item], item_view2[item])
 
-        # item_loss1 = InfoNCE_i(item_view1[G1], item_view2[G1], item_view2[G2], gama=beta)
-        # item_loss2 = InfoNCE_i(item_view1[G2], item_view2[G2], item_view2[G1], gama=beta)
-
-        # item_loss1 = 0
-        # item_loss2 = 0
-        user_loss = 0
-        # return cl_rate * item_loss
-        # return cl_rate * (user_loss + (gama) * item_loss1 + (1-gama) * item_loss2)
-        
-        # return user_loss + item_loss1 + item_loss2
-        # user_loss = 0
-        return cl_rate * (user_loss + item_loss)
-
+        return self.fusion_cl_loss(user_loss, item_loss)
     def calculate_loss(self, interaction):
         # clear the storage variable when training
 
@@ -344,7 +375,7 @@ class FairLightGCN(GeneralRecommender):
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
 
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        return loss + 0.0 * rq_loss
+        return loss + self.item_rq_loss_rate * rq_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]

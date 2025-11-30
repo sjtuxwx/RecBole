@@ -59,7 +59,7 @@ def split_by_pop_ratio(items, itempop, with_zero:bool = True, ratio:float = 0.5)
        
         return G1[0], G2[0]
     
-def InfoNCE(view1, view2, temperature=0.2):
+def InfoNCE(view1, view2, temperature=0.2, *args):
         view1, view2 = torch.nn.functional.normalize(
             view1, dim=1), torch.nn.functional.normalize(view2, dim=1)
         pos_score = (view1 * view2).sum(dim=-1)
@@ -69,7 +69,7 @@ def InfoNCE(view1, view2, temperature=0.2):
         cl_loss = -torch.log(pos_score / ttl_score)
         return torch.mean(cl_loss)
 
-def InfoNCE_i(view1, view2, view3,temperature=0.2,gama=0.2):
+def InfoNCE_i(view1, view2, view3,temperature=0.2,gama=0.2, *args):
     view1, view2,view3 = torch.nn.functional.normalize(
         view1, dim=1), torch.nn.functional.normalize(view2, dim=1), torch.nn.functional.normalize(view3, dim=1)
     pos_score = (view1 * view2).sum(dim=-1)

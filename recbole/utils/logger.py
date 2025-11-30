@@ -73,6 +73,8 @@ def init_logger(config):
     """
     init(autoreset=True)
     LOGROOT = "./log/"
+    if config['log_type'] == 'fair':
+        LOGROOT = os.path.join("./record", config['dataset'], config['model'])
     dir_name = os.path.dirname(LOGROOT)
     ensure_dir(dir_name)
     model_name = os.path.join(dir_name, config["model"])
@@ -82,6 +84,11 @@ def init_logger(config):
     logfilename = "{}/{}-{}-{}-{}.log".format(
         config["model"], config["model"], config["dataset"], get_local_time(), md5
     )
+    if config['log_type'] == 'fair':
+        logfilename = "cl_rate_{}_beta_{}_gama_{}_batch_size_{}_user_loss_{}_{}_pop_{}_item_rq_{}-{}.log".format(
+            config['cl_rate'], config['beta'], config['gama'], config['train_batch_size'], config['enable_user_loss'], config['item_loss_type'], config['pop_rate'], config['item_rq_rate'], md5
+        )
+
 
     logfilepath = os.path.join(LOGROOT, logfilename)
 

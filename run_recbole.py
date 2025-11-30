@@ -9,6 +9,10 @@
 
 import argparse
 import logging
+from cgi import parse
+
+from numpy.conftest import dtype
+
 # logging.disable(logging.WARNING)
 
 # warnings.filterwarnings("ignore")
@@ -44,6 +48,46 @@ if __name__ == "__main__":
         "--gpu_ids",
         type=str,
         help="the global rank offset of this group",
+    )
+    parser.add_argument(
+        "--cl_rate",
+        type=float,
+        help="cl learning rate"
+    )
+    parser.add_argument(
+        "--enable_user_loss",
+        type=bool,
+        default=False,
+    )
+    parser.add_argument(
+        "--item_loss_type",
+        type=str,
+        default=None
+    )
+    parser.add_argument(
+        "--item_rq_loss_rate",
+        type=float,
+        default=0
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.2
+    )
+    parser.add_argument(
+        "--log_type",
+        type=str,
+        default="fair"
+    )
+    parser.add_argument(
+        "--pop_rate",
+        type=float,
+        default=0.2
+    )
+    parser.add_argument(
+        "--gama",
+        type=float,
+        default=0.2
     )
 
     args, _ = parser.parse_known_args()
