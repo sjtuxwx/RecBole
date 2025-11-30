@@ -70,7 +70,7 @@ class RQVAE(nn.Module):
         pop_out = self.decoder(residual)
         
 
-        return out, rq_loss, indices. pop_out
+        return out, rq_loss, indices, pop_out
 
     @torch.no_grad()
     def get_indices(self, xs, use_sk=False):
