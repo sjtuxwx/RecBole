@@ -25,6 +25,7 @@ class RQVAE(nn.Module):
                  # sk_epsilons=[0,0,0.003,0.01]],
                  sk_epsilons=None,
                  sk_iters=100,
+                 pop_dim=64
         ):
         super(RQVAE, self).__init__()
 
@@ -56,18 +57,24 @@ class RQVAE(nn.Module):
                                           sk_epsilons=self.sk_epsilons,
                                           sk_iters=self.sk_iters,)
 
+
         self.decode_layer_dims = self.encode_layer_dims[::-1]
         self.decoder = MLPLayers(layers=self.decode_layer_dims,
                                        dropout=self.dropout_prob,bn=self.bn,
                                        activation='sigmoid'
                                        )
+        self.pop_decode_layer_dims = self.encode_layer_dims[::-1] + [pop_dim]
+        self.pop_decoder = MLPLayers(layers=self.pop_decode_layer_dims,
+                                 dropout=self.dropout_prob, bn=self.bn,
+                                 activation='sigmoid'
+                                 )
         self.W_gate = nn.Linear(self.in_dim, self.in_dim, bias=True)
     def forward(self, x, use_sk=True):
         ipt = x
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
-        pop_out = self.decoder(residual)
+        pop_out = self.pop_decoder(residual)
         
 
         return out, rq_loss, indices, pop_out

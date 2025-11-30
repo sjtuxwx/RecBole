@@ -140,6 +140,7 @@ class FairLightGCN(GeneralRecommender):
                   kmeans_iters=100,
                   sk_epsilons=[0.0, 0.0, 0.0],
                   sk_iters=50,
+                  pop_dim=self.latent_dim
                   )
         # self.rq_model_user = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['user']) + 1),
         #           num_emb_list=[8, 8, 8],
