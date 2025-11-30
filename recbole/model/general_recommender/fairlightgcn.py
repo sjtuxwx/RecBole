@@ -229,6 +229,8 @@ class FairLightGCN(GeneralRecommender):
         res = []
         for extra_info in self.eInfo['item']:
             item = interaction[extra_info]
+            if extra_info == 'popularity':
+                item = item[:, 1].long()
             emb = self.extra_embedding_forward(extra_info, item)
             res.append(emb)
         res.append(self.item_embedding(interaction[self.ITEM_ID]))

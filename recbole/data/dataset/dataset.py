@@ -1099,7 +1099,7 @@ class Dataset(torch.utils.data.Dataset):
         - 来源：ITEM
         - 序列长度：1
         """
-        cfg = self.config.get("load_col", None)
+        cfg = self.config['load_col']
         if cfg is None:
             return
         if "item" not in cfg:

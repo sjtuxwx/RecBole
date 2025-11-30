@@ -84,9 +84,9 @@ def init_logger(config):
     logfilename = "{}/{}-{}-{}-{}.log".format(
         config["model"], config["model"], config["dataset"], get_local_time(), md5
     )
-    if config['log_type'] == 'fair' and config['model'].startswith('Fair'):
-        logfilename = "cl_rate_{}_beta_{}_gama_{}_batch_size_{}_user_loss_{}_item_loss_{}_pop_{}_item_rq_{}-{}.log".format(
-            config['cl_rate'], config['beta'], config['gama'], config['train_batch_size'], config['enable_user_loss'], config['item_loss_type'], config['pop_rate'], config['item_rq_loss_rate'], get_local_time()
+    if config['log_type'] == 'fair' and config['model'].startswith('Fair') and config['mode'] == 'train':
+        logfilename = "cl_rate_{}_beta_{}_gama_{}_batch_size_{}_user_loss_{}_item_loss_{}_pop_{}_item_rq_{}_description_{}-{}.log".format(
+            config['cl_rate'], config['beta'], config['gama'], config['train_batch_size'], config['enable_user_loss'], config['item_loss_type'], config['pop_rate'], config['item_rq_loss_rate'], config['description'], get_local_time()
         )
     else:
         logfilename = "{}_batch_size_{}_pop_{}-{}.log".format(

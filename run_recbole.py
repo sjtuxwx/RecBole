@@ -105,6 +105,18 @@ if __name__ == "__main__":
         type=int,
         default=None
     )
+    
+    parser.add_argument(
+        "--description",
+        type=str,
+        default=None
+    )
+    
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="debug"
+    )
 
     args, _ = parser.parse_known_args()
 
