@@ -53,4 +53,4 @@ class ResidualVectorQuantizer(nn.Module):
         mean_losses = torch.stack(all_losses).mean()
         all_indices = torch.stack(all_indices, dim=-1)
 
-        return x_q, mean_losses, all_indices
+        return x_q, mean_losses, all_indices, residual

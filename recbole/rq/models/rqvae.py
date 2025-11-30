@@ -65,11 +65,12 @@ class RQVAE(nn.Module):
     def forward(self, x, use_sk=True):
         ipt = x
         x = self.encoder(x)
-        x_q, rq_loss, indices = self.rq(x,use_sk=use_sk)
+        x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
+        pop_out = self.decoder(residual)
         
 
-        return out, rq_loss, indices
+        return out, rq_loss, indices. pop_out
 
     @torch.no_grad()
     def get_indices(self, xs, use_sk=False):
