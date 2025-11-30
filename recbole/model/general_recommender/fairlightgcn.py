@@ -184,6 +184,8 @@ class FairLightGCN(GeneralRecommender):
             return emb
     def extra_embedding_for_specified(self, extra_info, item):
         embedding_layer = self.item_extra_embedding[extra_info]
+        if extra_info == 'popularity':
+            item = item.long()
         emb = embedding_layer(item)
         return emb
 

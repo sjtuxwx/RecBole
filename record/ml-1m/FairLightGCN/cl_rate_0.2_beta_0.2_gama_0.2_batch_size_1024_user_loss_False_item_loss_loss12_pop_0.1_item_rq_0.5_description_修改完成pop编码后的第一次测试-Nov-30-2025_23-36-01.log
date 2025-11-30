@@ -319,3 +319,32 @@ Mon 01 Dec 2025 00:07:03 INFO  epoch 37 evaluating [time: 0.39s, valid_score: 0.
 Mon 01 Dec 2025 00:07:03 INFO  valid result: 
 recall@10 : 0.1647    pop_recall@10 : 0.2245    unpop_recall@10 : 0.0623    mrr@10 : 0.3943    pop_mrr@10 : 0.3461    unpop_mrr@10 : 0.0862    ndcg@10 : 0.2197    pop_ndcg@10 : 0.2114    unpop_ndcg@10 : 0.053    hit@10 : 0.7528    pop_hit@10 : 0.6724    unpop_hit@10 : 0.2712    precision@10 : 0.1687    pop_precision@10 : 0.1309    unpop_precision@10 : 0.0378
 Mon 01 Dec 2025 00:07:03 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_23-36-08.pth
+Mon 01 Dec 2025 00:07:52 INFO  epoch 38 training [time: 49.17s, train loss: 926.4699]
+Mon 01 Dec 2025 00:08:41 INFO  epoch 39 training [time: 49.09s, train loss: 919.4973]
+Mon 01 Dec 2025 00:08:41 INFO  epoch 39 evaluating [time: 0.46s, valid_score: 0.394900]
+Mon 01 Dec 2025 00:08:41 INFO  valid result: 
+recall@10 : 0.1645    pop_recall@10 : 0.2236    unpop_recall@10 : 0.0629    mrr@10 : 0.3949    pop_mrr@10 : 0.3462    unpop_mrr@10 : 0.0868    ndcg@10 : 0.2196    pop_ndcg@10 : 0.2109    unpop_ndcg@10 : 0.0535    hit@10 : 0.7512    pop_hit@10 : 0.6705    unpop_hit@10 : 0.2728    precision@10 : 0.1685    pop_precision@10 : 0.1305    unpop_precision@10 : 0.038
+Mon 01 Dec 2025 00:08:42 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_23-36-08.pth
+Mon 01 Dec 2025 00:09:30 INFO  epoch 40 training [time: 48.71s, train loss: 915.6367]
+Mon 01 Dec 2025 00:10:19 INFO  epoch 41 training [time: 49.11s, train loss: 925.2482]
+Mon 01 Dec 2025 00:10:20 INFO  epoch 41 evaluating [time: 0.46s, valid_score: 0.395300]
+Mon 01 Dec 2025 00:10:20 INFO  valid result: 
+recall@10 : 0.1646    pop_recall@10 : 0.2249    unpop_recall@10 : 0.0622    mrr@10 : 0.3953    pop_mrr@10 : 0.3476    unpop_mrr@10 : 0.0849    ndcg@10 : 0.2203    pop_ndcg@10 : 0.2126    unpop_ndcg@10 : 0.0525    hit@10 : 0.7533    pop_hit@10 : 0.6743    unpop_hit@10 : 0.2672    precision@10 : 0.1692    pop_precision@10 : 0.132    unpop_precision@10 : 0.0371
+Mon 01 Dec 2025 00:10:20 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_23-36-08.pth
+Mon 01 Dec 2025 00:11:09 INFO  epoch 42 training [time: 49.04s, train loss: 928.4418]
+Mon 01 Dec 2025 00:11:58 INFO  epoch 43 training [time: 49.17s, train loss: 919.8526]
+Mon 01 Dec 2025 00:11:59 INFO  epoch 43 evaluating [time: 0.46s, valid_score: 0.395600]
+Mon 01 Dec 2025 00:11:59 INFO  valid result: 
+recall@10 : 0.1649    pop_recall@10 : 0.224    unpop_recall@10 : 0.0634    mrr@10 : 0.3956    pop_mrr@10 : 0.347    unpop_mrr@10 : 0.0868    ndcg@10 : 0.2199    pop_ndcg@10 : 0.2112    unpop_ndcg@10 : 0.0536    hit@10 : 0.753    pop_hit@10 : 0.6725    unpop_hit@10 : 0.2719    precision@10 : 0.1687    pop_precision@10 : 0.1309    unpop_precision@10 : 0.0378
+Mon 01 Dec 2025 00:11:59 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_23-36-08.pth
+Mon 01 Dec 2025 00:12:48 INFO  epoch 44 training [time: 49.08s, train loss: 920.5372]
+Mon 01 Dec 2025 00:13:37 INFO  epoch 45 training [time: 49.13s, train loss: 914.2102]
+Mon 01 Dec 2025 00:13:37 INFO  epoch 45 evaluating [time: 0.46s, valid_score: 0.396900]
+Mon 01 Dec 2025 00:13:37 INFO  valid result: 
+recall@10 : 0.1652    pop_recall@10 : 0.2246    unpop_recall@10 : 0.0633    mrr@10 : 0.3969    pop_mrr@10 : 0.3487    unpop_mrr@10 : 0.0861    ndcg@10 : 0.2209    pop_ndcg@10 : 0.2126    unpop_ndcg@10 : 0.0534    hit@10 : 0.7555    pop_hit@10 : 0.6745    unpop_hit@10 : 0.273    precision@10 : 0.1696    pop_precision@10 : 0.1318    unpop_precision@10 : 0.0378
+Mon 01 Dec 2025 00:13:37 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_23-36-08.pth
+Mon 01 Dec 2025 00:14:27 INFO  epoch 46 training [time: 49.33s, train loss: 919.0322]
+Mon 01 Dec 2025 00:15:16 INFO  epoch 47 training [time: 48.97s, train loss: 933.2816]
+Mon 01 Dec 2025 00:15:16 INFO  epoch 47 evaluating [time: 0.46s, valid_score: 0.396200]
+Mon 01 Dec 2025 00:15:16 INFO  valid result: 
+recall@10 : 0.1654    pop_recall@10 : 0.2259    unpop_recall@10 : 0.0627    mrr@10 : 0.3962    pop_mrr@10 : 0.3488    unpop_mrr@10 : 0.085    ndcg@10 : 0.2209    pop_ndcg@10 : 0.213    unpop_ndcg@10 : 0.053    hit@10 : 0.7551    pop_hit@10 : 0.6757    unpop_hit@10 : 0.2707    precision@10 : 0.1698    pop_precision@10 : 0.1321    unpop_precision@10 : 0.0377
