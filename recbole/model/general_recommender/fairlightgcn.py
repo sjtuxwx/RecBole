@@ -182,6 +182,10 @@ class FairLightGCN(GeneralRecommender):
         else:
             # 一维时直接返回 embedding
             return emb
+    def extra_embedding_for_specified(self, extra_info, item):
+        embedding_layer = self.item_extra_embedding[extra_info]
+        emb = embedding_layer(item)
+        return emb
 
     def extra_embedding_forward_user(self, extra_info, user):
         embedding_layer = self.user_extra_embedding[extra_info]
@@ -379,7 +383,16 @@ class FairLightGCN(GeneralRecommender):
         out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        return loss + self.item_rq_loss_rate * rq_loss
+        item_popularity = interaction['popularity'][:, 1]
+        item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
+        return loss + self.item_rq_loss_rate * rq_loss + 0.2 * self.pop_recontruct_loss(pop_out, item_embedding)
+
+    def pop_recontruct_loss(self, pop_out, pop_embedding):
+        # 计算 pop_out 与 pop_embedding 的余弦相似度损失
+        cos_sim = F.cosine_similarity(pop_out, pop_embedding, dim=-1)  # [batch_size]
+        # 最大化余弦相似度 -> 最小化 1 - cos_sim
+        loss = 1 - cos_sim
+        return loss.mean()
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
