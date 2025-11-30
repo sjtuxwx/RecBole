@@ -1,5 +1,5 @@
-Sun 30 Nov 2025 17:39:35 INFO  ['run_recbole.py', '--model', 'FairLightGCN', '--dataset', 'ml-1m', '--item_rq_loss_rate', '0.5', '--enable_user_loss', 'False', '--cl_rate', '0.2', '--pop_rate', '0.1', '--item_loss_type', 'full', '--gpu_ids', '2']
-Sun 30 Nov 2025 17:39:35 INFO  
+Sun 30 Nov 2025 18:55:06 INFO  ['run_recbole.py', '--model', 'FairLightGCN', '--dataset', 'ml-1m', '--cl_rate', '0.2', '--enable_user_loss', 'False', '--item_rq_loss_rate', '0.5', '--beta', '0.2', '--pop_rate', '0.1', '--gama', '0.2', '--train_batch_size', '1024', '--item_loss_type', 'loss12', '--gpu_ids', '0']
+Sun 30 Nov 2025 18:55:06 INFO  
 General Hyper Parameters:
 gpu_id = 0
 use_gpu = True
@@ -114,10 +114,10 @@ ip = localhost
 port = 5678
 world_size = -1
 group_offset = 0
-gpu_ids = 2
+gpu_ids = 0
 cl_rate = 0.2
-enable_user_loss = True
-item_loss_type = full
+enable_user_loss = False
+item_loss_type = loss12
 item_rq_loss_rate = 0.5
 beta = 0.2
 log_type = fair
@@ -125,7 +125,7 @@ pop_rate = 0.1
 gama = 0.2
 
 
-Sun 30 Nov 2025 17:39:38 INFO  ml-1m
+Sun 30 Nov 2025 18:55:10 INFO  ml-1m
 The number of users: 6041
 Average actions of users: 165.5975165562914
 The number of items: 3884
@@ -133,9 +133,9 @@ Average actions of items: 269.88909875876953
 The number of inters: 1000209
 The sparsity of the dataset: 95.73712398848173%
 Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp', 'age', 'gender', 'occupation', 'release_year', 'genre']
-Sun 30 Nov 2025 17:39:41 INFO  [Training]: train_batch_size = [1024] train_neg_sample_args: [{'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}]
-Sun 30 Nov 2025 17:39:41 INFO  [Evaluation]: eval_batch_size = [102400] eval_args: [{'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}]
-Sun 30 Nov 2025 17:39:41 INFO  FairLightGCN(
+Sun 30 Nov 2025 18:55:15 INFO  [Training]: train_batch_size = [1024] train_neg_sample_args: [{'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}]
+Sun 30 Nov 2025 18:55:15 INFO  [Evaluation]: eval_batch_size = [102400] eval_args: [{'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}]
+Sun 30 Nov 2025 18:55:16 INFO  FairLightGCN(
   (user_embedding): Embedding(6041, 64)
   (item_embedding): Embedding(3884, 64)
   (mf_loss): BPRLoss()
@@ -210,25 +210,10 @@ Sun 30 Nov 2025 17:39:41 INFO  FairLightGCN(
   )
 )
 Trainable parameters: 807264
-Sun 30 Nov 2025 17:39:41 INFO  FLOPs: 0.0
-Sun 30 Nov 2025 17:40:30 INFO  epoch 0 training [time: 48.52s, train loss: 1202.9082]
-Sun 30 Nov 2025 17:41:18 INFO  epoch 1 training [time: 47.51s, train loss: 1127.5531]
-Sun 30 Nov 2025 17:41:18 INFO  epoch 1 evaluating [time: 0.50s, valid_score: 0.276400]
-Sun 30 Nov 2025 17:41:18 INFO  valid result: 
-recall@10 : 0.1121    pop_recall@10 : 0.1011    unpop_recall@10 : 0.0927    mrr@10 : 0.2764    pop_mrr@10 : 0.1432    unpop_mrr@10 : 0.1559    ndcg@10 : 0.137    pop_ndcg@10 : 0.0813    unpop_ndcg@10 : 0.0874    hit@10 : 0.618    pop_hit@10 : 0.3583    unpop_hit@10 : 0.3755    precision@10 : 0.1021    pop_precision@10 : 0.0463    unpop_precision@10 : 0.0558
-Sun 30 Nov 2025 17:41:18 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_17-39-41.pth
-Sun 30 Nov 2025 17:42:06 INFO  epoch 2 training [time: 47.76s, train loss: 1130.2061]
-Sun 30 Nov 2025 17:42:54 INFO  epoch 3 training [time: 47.88s, train loss: 1157.5395]
-Sun 30 Nov 2025 17:42:54 INFO  epoch 3 evaluating [time: 0.48s, valid_score: 0.259400]
-Sun 30 Nov 2025 17:42:54 INFO  valid result: 
-recall@10 : 0.1053    pop_recall@10 : 0.0909    unpop_recall@10 : 0.0923    mrr@10 : 0.2594    pop_mrr@10 : 0.127    unpop_mrr@10 : 0.1524    ndcg@10 : 0.1277    pop_ndcg@10 : 0.0722    unpop_ndcg@10 : 0.0859    hit@10 : 0.5901    pop_hit@10 : 0.3291    unpop_hit@10 : 0.3632    precision@10 : 0.0944    pop_precision@10 : 0.041    unpop_precision@10 : 0.0535
-Sun 30 Nov 2025 17:43:43 INFO  epoch 4 training [time: 48.60s, train loss: 1168.8835]
-Sun 30 Nov 2025 17:44:30 INFO  epoch 5 training [time: 47.44s, train loss: 1184.0401]
-Sun 30 Nov 2025 17:44:31 INFO  epoch 5 evaluating [time: 0.52s, valid_score: 0.260000]
-Sun 30 Nov 2025 17:44:31 INFO  valid result: 
-recall@10 : 0.1035    pop_recall@10 : 0.0861    unpop_recall@10 : 0.0937    mrr@10 : 0.26    pop_mrr@10 : 0.1227    unpop_mrr@10 : 0.1565    ndcg@10 : 0.127    pop_ndcg@10 : 0.0689    unpop_ndcg@10 : 0.088    hit@10 : 0.5823    pop_hit@10 : 0.3142    unpop_hit@10 : 0.3662    precision@10 : 0.0936    pop_precision@10 : 0.0389    unpop_precision@10 : 0.0547
-Sun 30 Nov 2025 17:45:19 INFO  epoch 6 training [time: 47.76s, train loss: 1171.1423]
-Sun 30 Nov 2025 17:46:07 INFO  epoch 7 training [time: 47.80s, train loss: 1171.7044]
-Sun 30 Nov 2025 17:46:07 INFO  epoch 7 evaluating [time: 0.50s, valid_score: 0.266300]
-Sun 30 Nov 2025 17:46:07 INFO  valid result: 
-recall@10 : 0.1055    pop_recall@10 : 0.0881    unpop_recall@10 : 0.0946    mrr@10 : 0.2663    pop_mrr@10 : 0.1281    unpop_mrr@10 : 0.1584    ndcg@10 : 0.131    pop_ndcg@10 : 0.0715    unpop_ndcg@10 : 0.0894    hit@10 : 0.5901    pop_hit@10 : 0.3232    unpop_hit@10 : 0.3717    precision@10 : 0.0969    pop_precision@10 : 0.0405    unpop_precision@10 : 0.0564
+Sun 30 Nov 2025 18:55:16 INFO  FLOPs: 0.0
+Sun 30 Nov 2025 18:56:10 INFO  epoch 0 training [time: 52.72s, train loss: 1123.2426]
+Sun 30 Nov 2025 18:57:03 INFO  epoch 1 training [time: 52.30s, train loss: 1064.5711]
+Sun 30 Nov 2025 18:57:03 INFO  epoch 1 evaluating [time: 0.66s, valid_score: 0.240300]
+Sun 30 Nov 2025 18:57:03 INFO  valid result: 
+recall@10 : 0.0942    pop_recall@10 : 0.1083    unpop_recall@10 : 0.0583    mrr@10 : 0.2403    pop_mrr@10 : 0.1865    unpop_mrr@10 : 0.0724    ndcg@10 : 0.1165    pop_ndcg@10 : 0.0994    unpop_ndcg@10 : 0.0451    hit@10 : 0.5503    pop_hit@10 : 0.4253    unpop_hit@10 : 0.2278    precision@10 : 0.0866    pop_precision@10 : 0.058    unpop_precision@10 : 0.0286
+Sun 30 Nov 2025 18:57:03 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-55-16.pth

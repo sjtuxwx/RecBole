@@ -305,6 +305,8 @@ class FairLightGCN(GeneralRecommender):
         return user_all_embeddings, item_all_embeddings
 
     def fusion_cl_loss(self, user_loss, item_loss):
+        # print(user_loss, item_loss)
+        fusion_loss = user_loss
         if self.enable_user_loss == False:
             fusion_loss = item_loss
         else:

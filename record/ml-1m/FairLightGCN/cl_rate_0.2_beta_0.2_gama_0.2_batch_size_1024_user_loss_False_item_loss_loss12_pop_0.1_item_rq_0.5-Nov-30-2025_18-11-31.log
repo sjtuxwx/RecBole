@@ -1,0 +1,471 @@
+Sun 30 Nov 2025 18:11:31 INFO  ['run_recbole.py', '--model', 'FairLightGCN', '--dataset', 'ml-1m', '--cl_rate', '0.2', '--pop_rate', '0.1', '--item_rq_loss_rate', '0.5', '--gpu_ids', '2', '--enable_user_loss', 'False', '--item_loss_type', 'loss12']
+Sun 30 Nov 2025 18:11:31 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 2020
+state = INFO
+reproducibility = True
+data_path = dataset/ml-1m
+checkpoint_dir = saved
+show_progress = True
+save_dataset = False
+dataset_save_path = None
+save_dataloaders = False
+dataloaders_save_path = None
+log_wandb = False
+
+Training Hyper Parameters:
+epochs = 100
+train_batch_size = 1024
+learner = adam
+learning_rate = 0.001
+train_neg_sample_args = {'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}
+eval_step = 2
+stopping_step = 10
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}
+repeatable = False
+metrics = ['Recall', 'MRR', 'NDCG', 'Hit', 'Precision']
+topk = [10]
+valid_metric = MRR@10
+valid_metric_bigger = True
+eval_batch_size = 102400
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+train_batch_size = 1024
+eval_batch_size = 102400
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'rating', 'timestamp'], 'user': ['user_id', 'age', 'gender', 'occupation'], 'item': ['item_id', 'release_year', 'genre']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = None
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = None
+item_inter_num_interval = None
+alias_of_user_id = None
+alias_of_item_id = None
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = None
+normalize_field = None
+normalize_all = True
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+kg_reverse_r = False
+entity_kg_num_interval = None
+relation_kg_num_interval = None
+benchmark_filename = None
+save_single_user = True
+save_base_path = output
+attr = {'user': {'need_inter_num': True, 'need_inter_hour': True, 'need_rating': True, 'need_item_genre': True, 'need_item_year': True, 'need_zipcode_to_region': True}, 'item': {'need_inter_num': True, 'need_inter_hour': True, 'need_rating': True, 'need_age': True, 'need_gender': True, 'need_occupation': True, 'need_region': True}, 'interaction': {'timestamp_unit': 's'}}
+to_bin = {'user': {'mean_rating': {'n_bins': 5}, 'interaction_nums': {'n_bins': 5}}, 'item': {'mean_rating': {'n_bins': 5}, 'interaction_nums': {'n_bins': 5}}}
+
+Other Hyper Parameters: 
+worker = 0
+wandb_project = recbole
+shuffle = True
+require_pow = False
+enable_amp = False
+enable_scaler = False
+transform = None
+export_topk_recs = True
+export_topk_dir = None
+export_topk_filename = None
+export_topk_item_separator = None
+export_topk_separate_columns = None
+embedding_size = 64
+n_layers = 2
+reg_weight = 1e-05
+numerical_features = []
+discretization = None
+MODEL_TYPE = ModelType.GENERAL
+MODEL_INPUT_TYPE = InputType.PAIRWISE
+eval_type = EvaluatorType.RANKING
+single_spec = True
+local_rank = 0
+device = cuda
+valid_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+test_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+nproc = 1
+ip = localhost
+port = 5678
+world_size = -1
+group_offset = 0
+gpu_ids = 2
+cl_rate = 0.2
+enable_user_loss = False
+item_loss_type = loss12
+item_rq_loss_rate = 0.5
+beta = 0.2
+log_type = fair
+pop_rate = 0.1
+gama = 0.2
+
+
+Sun 30 Nov 2025 18:11:36 INFO  ml-1m
+The number of users: 6041
+Average actions of users: 165.5975165562914
+The number of items: 3884
+Average actions of items: 269.88909875876953
+The number of inters: 1000209
+The sparsity of the dataset: 95.73712398848173%
+Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp', 'age', 'gender', 'occupation', 'release_year', 'genre']
+Sun 30 Nov 2025 18:11:41 INFO  [Training]: train_batch_size = [1024] train_neg_sample_args: [{'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}]
+Sun 30 Nov 2025 18:11:41 INFO  [Evaluation]: eval_batch_size = [102400] eval_args: [{'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'RO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}]
+Sun 30 Nov 2025 18:11:42 INFO  FairLightGCN(
+  (user_embedding): Embedding(6041, 64)
+  (item_embedding): Embedding(3884, 64)
+  (mf_loss): BPRLoss()
+  (reg_loss): EmbLoss()
+  (rq_model_item): RQVAE(
+    (encoder): MLPLayers(
+      (mlp_layers): Sequential(
+        (0): Dropout(p=0, inplace=False)
+        (1): Linear(in_features=192, out_features=64, bias=True)
+        (2): Sigmoid()
+        (3): Dropout(p=0, inplace=False)
+        (4): Linear(in_features=64, out_features=32, bias=True)
+        (5): Sigmoid()
+        (6): Dropout(p=0, inplace=False)
+        (7): Linear(in_features=32, out_features=16, bias=True)
+      )
+    )
+    (rq): ResidualVectorQuantizer(
+      (vq_layers): ModuleList(
+        (0-2): 3 x VectorQuantizer(
+          (embedding): Embedding(8, 16)
+        )
+      )
+    )
+    (decoder): MLPLayers(
+      (mlp_layers): Sequential(
+        (0): Dropout(p=0, inplace=False)
+        (1): Linear(in_features=16, out_features=32, bias=True)
+        (2): Sigmoid()
+        (3): Dropout(p=0, inplace=False)
+        (4): Linear(in_features=32, out_features=64, bias=True)
+        (5): Sigmoid()
+        (6): Dropout(p=0, inplace=False)
+        (7): Linear(in_features=64, out_features=192, bias=True)
+      )
+    )
+    (W_gate): Linear(in_features=192, out_features=192, bias=True)
+  )
+  (rq_model_user): RQVAE(
+    (encoder): MLPLayers(
+      (mlp_layers): Sequential(
+        (0): Dropout(p=0, inplace=False)
+        (1): Linear(in_features=256, out_features=64, bias=True)
+        (2): Sigmoid()
+        (3): Dropout(p=0, inplace=False)
+        (4): Linear(in_features=64, out_features=32, bias=True)
+        (5): Sigmoid()
+        (6): Dropout(p=0, inplace=False)
+        (7): Linear(in_features=32, out_features=16, bias=True)
+      )
+    )
+    (rq): ResidualVectorQuantizer(
+      (vq_layers): ModuleList(
+        (0-2): 3 x VectorQuantizer(
+          (embedding): Embedding(8, 16)
+        )
+      )
+    )
+    (decoder): MLPLayers(
+      (mlp_layers): Sequential(
+        (0): Dropout(p=0, inplace=False)
+        (1): Linear(in_features=16, out_features=32, bias=True)
+        (2): Sigmoid()
+        (3): Dropout(p=0, inplace=False)
+        (4): Linear(in_features=32, out_features=64, bias=True)
+        (5): Sigmoid()
+        (6): Dropout(p=0, inplace=False)
+        (7): Linear(in_features=64, out_features=256, bias=True)
+      )
+    )
+    (W_gate): Linear(in_features=256, out_features=256, bias=True)
+  )
+)
+Trainable parameters: 807264
+Sun 30 Nov 2025 18:11:42 INFO  FLOPs: 0.0
+Sun 30 Nov 2025 18:12:49 INFO  epoch 0 training [time: 66.39s, train loss: 1123.2861]
+Sun 30 Nov 2025 18:13:55 INFO  epoch 1 training [time: 65.81s, train loss: 1064.2999]
+Sun 30 Nov 2025 18:13:56 INFO  epoch 1 evaluating [time: 1.38s, valid_score: 0.241000]
+Sun 30 Nov 2025 18:13:56 INFO  valid result: 
+recall@10 : 0.094    pop_recall@10 : 0.1083    unpop_recall@10 : 0.0586    mrr@10 : 0.241    pop_mrr@10 : 0.1867    unpop_mrr@10 : 0.0734    ndcg@10 : 0.1165    pop_ndcg@10 : 0.0991    unpop_ndcg@10 : 0.0455    hit@10 : 0.5517    pop_hit@10 : 0.426    unpop_hit@10 : 0.2291    precision@10 : 0.0868    pop_precision@10 : 0.0579    unpop_precision@10 : 0.0289
+Sun 30 Nov 2025 18:13:56 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:15:02 INFO  epoch 2 training [time: 65.69s, train loss: 1077.6169]
+Sun 30 Nov 2025 18:16:08 INFO  epoch 3 training [time: 65.83s, train loss: 1103.3607]
+Sun 30 Nov 2025 18:16:10 INFO  epoch 3 evaluating [time: 1.73s, valid_score: 0.218800]
+Sun 30 Nov 2025 18:16:10 INFO  valid result: 
+recall@10 : 0.0865    pop_recall@10 : 0.0932    unpop_recall@10 : 0.0612    mrr@10 : 0.2188    pop_mrr@10 : 0.158    unpop_mrr@10 : 0.079    ndcg@10 : 0.1065    pop_ndcg@10 : 0.0836    unpop_ndcg@10 : 0.0486    hit@10 : 0.5286    pop_hit@10 : 0.3846    unpop_hit@10 : 0.2444    precision@10 : 0.0812    pop_precision@10 : 0.0503    unpop_precision@10 : 0.0309
+Sun 30 Nov 2025 18:17:16 INFO  epoch 4 training [time: 66.22s, train loss: 1117.0277]
+Sun 30 Nov 2025 18:18:21 INFO  epoch 5 training [time: 65.28s, train loss: 1121.0433]
+Sun 30 Nov 2025 18:18:23 INFO  epoch 5 evaluating [time: 1.54s, valid_score: 0.226100]
+Sun 30 Nov 2025 18:18:23 INFO  valid result: 
+recall@10 : 0.0862    pop_recall@10 : 0.0858    unpop_recall@10 : 0.0683    mrr@10 : 0.2261    pop_mrr@10 : 0.1513    unpop_mrr@10 : 0.0944    ndcg@10 : 0.1096    pop_ndcg@10 : 0.0782    unpop_ndcg@10 : 0.0572    hit@10 : 0.5331    pop_hit@10 : 0.3581    unpop_hit@10 : 0.2785    precision@10 : 0.0837    pop_precision@10 : 0.0465    unpop_precision@10 : 0.0372
+Sun 30 Nov 2025 18:19:28 INFO  epoch 6 training [time: 65.32s, train loss: 1129.0783]
+Sun 30 Nov 2025 18:20:33 INFO  epoch 7 training [time: 65.02s, train loss: 1141.8679]
+Sun 30 Nov 2025 18:20:35 INFO  epoch 7 evaluating [time: 1.48s, valid_score: 0.205500]
+Sun 30 Nov 2025 18:20:35 INFO  valid result: 
+recall@10 : 0.0778    pop_recall@10 : 0.0643    unpop_recall@10 : 0.0752    mrr@10 : 0.2055    pop_mrr@10 : 0.1082    unpop_mrr@10 : 0.114    ndcg@10 : 0.0987    pop_ndcg@10 : 0.0554    unpop_ndcg@10 : 0.0673    hit@10 : 0.4887    pop_hit@10 : 0.2661    unpop_hit@10 : 0.3088    precision@10 : 0.0746    pop_precision@10 : 0.0311    unpop_precision@10 : 0.0435
+Sun 30 Nov 2025 18:21:40 INFO  epoch 8 training [time: 65.10s, train loss: 1141.3175]
+Sun 30 Nov 2025 18:22:45 INFO  epoch 9 training [time: 65.32s, train loss: 1143.7671]
+Sun 30 Nov 2025 18:22:46 INFO  epoch 9 evaluating [time: 1.41s, valid_score: 0.159300]
+Sun 30 Nov 2025 18:22:46 INFO  valid result: 
+recall@10 : 0.0591    pop_recall@10 : 0.0347    unpop_recall@10 : 0.0725    mrr@10 : 0.1593    pop_mrr@10 : 0.0528    unpop_mrr@10 : 0.1163    ndcg@10 : 0.0755    pop_ndcg@10 : 0.0278    unpop_ndcg@10 : 0.0665    hit@10 : 0.3934    pop_hit@10 : 0.1416    unpop_hit@10 : 0.3008    precision@10 : 0.0573    pop_precision@10 : 0.0153    unpop_precision@10 : 0.042
+Sun 30 Nov 2025 18:23:53 INFO  epoch 10 training [time: 66.14s, train loss: 1137.0576]
+Sun 30 Nov 2025 18:24:58 INFO  epoch 11 training [time: 65.76s, train loss: 1119.4373]
+Sun 30 Nov 2025 18:25:00 INFO  epoch 11 evaluating [time: 1.48s, valid_score: 0.161700]
+Sun 30 Nov 2025 18:25:00 INFO  valid result: 
+recall@10 : 0.0558    pop_recall@10 : 0.029    unpop_recall@10 : 0.0727    mrr@10 : 0.1617    pop_mrr@10 : 0.0451    unpop_mrr@10 : 0.1264    ndcg@10 : 0.0755    pop_ndcg@10 : 0.0237    unpop_ndcg@10 : 0.0695    hit@10 : 0.3821    pop_hit@10 : 0.1265    unpop_hit@10 : 0.3051    precision@10 : 0.0579    pop_precision@10 : 0.0137    unpop_precision@10 : 0.0442
+Sun 30 Nov 2025 18:26:04 INFO  epoch 12 training [time: 64.36s, train loss: 1104.4614]
+Sun 30 Nov 2025 18:27:09 INFO  epoch 13 training [time: 65.17s, train loss: 1077.7070]
+Sun 30 Nov 2025 18:27:11 INFO  epoch 13 evaluating [time: 1.36s, valid_score: 0.208000]
+Sun 30 Nov 2025 18:27:11 INFO  valid result: 
+recall@10 : 0.0714    pop_recall@10 : 0.0485    unpop_recall@10 : 0.0847    mrr@10 : 0.208    pop_mrr@10 : 0.078    unpop_mrr@10 : 0.149    ndcg@10 : 0.1005    pop_ndcg@10 : 0.0403    unpop_ndcg@10 : 0.0832    hit@10 : 0.4695    pop_hit@10 : 0.2071    unpop_hit@10 : 0.3584    precision@10 : 0.0784    pop_precision@10 : 0.0237    unpop_precision@10 : 0.0548
+Sun 30 Nov 2025 18:28:16 INFO  epoch 14 training [time: 65.17s, train loss: 1064.4287]
+Sun 30 Nov 2025 18:29:21 INFO  epoch 15 training [time: 65.57s, train loss: 1029.7955]
+Sun 30 Nov 2025 18:29:23 INFO  epoch 15 evaluating [time: 1.55s, valid_score: 0.302600]
+Sun 30 Nov 2025 18:29:23 INFO  valid result: 
+recall@10 : 0.1148    pop_recall@10 : 0.1369    unpop_recall@10 : 0.0686    mrr@10 : 0.3026    pop_mrr@10 : 0.2303    unpop_mrr@10 : 0.1074    ndcg@10 : 0.1579    pop_ndcg@10 : 0.1268    unpop_ndcg@10 : 0.0642    hit@10 : 0.6399    pop_hit@10 : 0.5079    unpop_hit@10 : 0.305    precision@10 : 0.1237    pop_precision@10 : 0.0781    unpop_precision@10 : 0.0456
+Sun 30 Nov 2025 18:29:23 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:30:29 INFO  epoch 16 training [time: 65.52s, train loss: 1006.8417]
+Sun 30 Nov 2025 18:31:34 INFO  epoch 17 training [time: 65.65s, train loss: 981.4083]
+Sun 30 Nov 2025 18:31:36 INFO  epoch 17 evaluating [time: 1.42s, valid_score: 0.355100]
+Sun 30 Nov 2025 18:31:36 INFO  valid result: 
+recall@10 : 0.1405    pop_recall@10 : 0.1848    unpop_recall@10 : 0.0634    mrr@10 : 0.3551    pop_mrr@10 : 0.2983    unpop_mrr@10 : 0.0937    ndcg@10 : 0.1905    pop_ndcg@10 : 0.1731    unpop_ndcg@10 : 0.0568    hit@10 : 0.7098    pop_hit@10 : 0.6098    unpop_hit@10 : 0.2851    precision@10 : 0.1468    pop_precision@10 : 0.1061    unpop_precision@10 : 0.0407
+Sun 30 Nov 2025 18:31:36 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:32:42 INFO  epoch 18 training [time: 66.20s, train loss: 965.0203]
+Sun 30 Nov 2025 18:33:48 INFO  epoch 19 training [time: 66.07s, train loss: 930.8443]
+Sun 30 Nov 2025 18:33:50 INFO  epoch 19 evaluating [time: 1.60s, valid_score: 0.371700]
+Sun 30 Nov 2025 18:33:50 INFO  valid result: 
+recall@10 : 0.1508    pop_recall@10 : 0.2029    unpop_recall@10 : 0.0611    mrr@10 : 0.3717    pop_mrr@10 : 0.3201    unpop_mrr@10 : 0.0887    ndcg@10 : 0.2029    pop_ndcg@10 : 0.1903    unpop_ndcg@10 : 0.0541    hit@10 : 0.7293    pop_hit@10 : 0.6419    unpop_hit@10 : 0.2753    precision@10 : 0.1558    pop_precision@10 : 0.1171    unpop_precision@10 : 0.0387
+Sun 30 Nov 2025 18:33:50 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:34:56 INFO  epoch 20 training [time: 65.80s, train loss: 915.2490]
+Sun 30 Nov 2025 18:36:02 INFO  epoch 21 training [time: 66.13s, train loss: 898.4614]
+Sun 30 Nov 2025 18:36:03 INFO  epoch 21 evaluating [time: 1.52s, valid_score: 0.378000]
+Sun 30 Nov 2025 18:36:03 INFO  valid result: 
+recall@10 : 0.1555    pop_recall@10 : 0.2094    unpop_recall@10 : 0.0615    mrr@10 : 0.378    pop_mrr@10 : 0.3284    unpop_mrr@10 : 0.0871    ndcg@10 : 0.2077    pop_ndcg@10 : 0.1967    unpop_ndcg@10 : 0.0535    hit@10 : 0.7376    pop_hit@10 : 0.653    unpop_hit@10 : 0.2752    precision@10 : 0.1593    pop_precision@10 : 0.1209    unpop_precision@10 : 0.0385
+Sun 30 Nov 2025 18:36:03 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:37:10 INFO  epoch 22 training [time: 66.14s, train loss: 916.7833]
+Sun 30 Nov 2025 18:38:16 INFO  epoch 23 training [time: 66.35s, train loss: 908.0244]
+Sun 30 Nov 2025 18:38:17 INFO  epoch 23 evaluating [time: 1.51s, valid_score: 0.380900]
+Sun 30 Nov 2025 18:38:17 INFO  valid result: 
+recall@10 : 0.1582    pop_recall@10 : 0.2133    unpop_recall@10 : 0.062    mrr@10 : 0.3809    pop_mrr@10 : 0.3314    unpop_mrr@10 : 0.0875    ndcg@10 : 0.2106    pop_ndcg@10 : 0.1998    unpop_ndcg@10 : 0.0539    hit@10 : 0.7422    pop_hit@10 : 0.6588    unpop_hit@10 : 0.2763    precision@10 : 0.1621    pop_precision@10 : 0.1233    unpop_precision@10 : 0.0388
+Sun 30 Nov 2025 18:38:18 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:39:24 INFO  epoch 24 training [time: 66.10s, train loss: 896.7127]
+Sun 30 Nov 2025 18:40:30 INFO  epoch 25 training [time: 65.86s, train loss: 908.9456]
+Sun 30 Nov 2025 18:40:31 INFO  epoch 25 evaluating [time: 1.45s, valid_score: 0.385300]
+Sun 30 Nov 2025 18:40:31 INFO  valid result: 
+recall@10 : 0.1604    pop_recall@10 : 0.2167    unpop_recall@10 : 0.0626    mrr@10 : 0.3853    pop_mrr@10 : 0.3364    unpop_mrr@10 : 0.0871    ndcg@10 : 0.2129    pop_ndcg@10 : 0.2028    unpop_ndcg@10 : 0.0538    hit@10 : 0.7495    pop_hit@10 : 0.6651    unpop_hit@10 : 0.2781    precision@10 : 0.1635    pop_precision@10 : 0.1249    unpop_precision@10 : 0.0386
+Sun 30 Nov 2025 18:40:31 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:41:37 INFO  epoch 26 training [time: 65.65s, train loss: 899.9646]
+Sun 30 Nov 2025 18:42:42 INFO  epoch 27 training [time: 65.35s, train loss: 911.9612]
+Sun 30 Nov 2025 18:42:44 INFO  epoch 27 evaluating [time: 1.50s, valid_score: 0.390500]
+Sun 30 Nov 2025 18:42:44 INFO  valid result: 
+recall@10 : 0.1625    pop_recall@10 : 0.2216    unpop_recall@10 : 0.0614    mrr@10 : 0.3905    pop_mrr@10 : 0.3428    unpop_mrr@10 : 0.0848    ndcg@10 : 0.2162    pop_ndcg@10 : 0.2082    unpop_ndcg@10 : 0.0524    hit@10 : 0.7522    pop_hit@10 : 0.6724    unpop_hit@10 : 0.27    precision@10 : 0.1657    pop_precision@10 : 0.1285    unpop_precision@10 : 0.0372
+Sun 30 Nov 2025 18:42:44 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:43:49 INFO  epoch 28 training [time: 65.56s, train loss: 879.9727]
+Sun 30 Nov 2025 18:44:55 INFO  epoch 29 training [time: 65.81s, train loss: 876.0791]
+Sun 30 Nov 2025 18:44:57 INFO  epoch 29 evaluating [time: 1.49s, valid_score: 0.390300]
+Sun 30 Nov 2025 18:44:57 INFO  valid result: 
+recall@10 : 0.1634    pop_recall@10 : 0.2229    unpop_recall@10 : 0.062    mrr@10 : 0.3903    pop_mrr@10 : 0.3421    unpop_mrr@10 : 0.086    ndcg@10 : 0.217    pop_ndcg@10 : 0.2087    unpop_ndcg@10 : 0.0529    hit@10 : 0.7525    pop_hit@10 : 0.6728    unpop_hit@10 : 0.272    precision@10 : 0.1665    pop_precision@10 : 0.129    unpop_precision@10 : 0.0374
+Sun 30 Nov 2025 18:46:02 INFO  epoch 30 training [time: 65.29s, train loss: 890.2997]
+Sun 30 Nov 2025 18:47:07 INFO  epoch 31 training [time: 65.20s, train loss: 874.2179]
+Sun 30 Nov 2025 18:47:09 INFO  epoch 31 evaluating [time: 1.35s, valid_score: 0.391200]
+Sun 30 Nov 2025 18:47:09 INFO  valid result: 
+recall@10 : 0.1649    pop_recall@10 : 0.2241    unpop_recall@10 : 0.0622    mrr@10 : 0.3912    pop_mrr@10 : 0.3434    unpop_mrr@10 : 0.0857    ndcg@10 : 0.2184    pop_ndcg@10 : 0.2102    unpop_ndcg@10 : 0.0529    hit@10 : 0.754    pop_hit@10 : 0.675    unpop_hit@10 : 0.272    precision@10 : 0.1679    pop_precision@10 : 0.1303    unpop_precision@10 : 0.0376
+Sun 30 Nov 2025 18:47:09 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:48:14 INFO  epoch 32 training [time: 65.59s, train loss: 860.4522]
+Sun 30 Nov 2025 18:49:19 INFO  epoch 33 training [time: 64.20s, train loss: 860.7422]
+Sun 30 Nov 2025 18:49:20 INFO  epoch 33 evaluating [time: 1.55s, valid_score: 0.391300]
+Sun 30 Nov 2025 18:49:20 INFO  valid result: 
+recall@10 : 0.1648    pop_recall@10 : 0.2245    unpop_recall@10 : 0.0626    mrr@10 : 0.3913    pop_mrr@10 : 0.3434    unpop_mrr@10 : 0.0858    ndcg@10 : 0.2188    pop_ndcg@10 : 0.2105    unpop_ndcg@10 : 0.0533    hit@10 : 0.7551    pop_hit@10 : 0.6755    unpop_hit@10 : 0.2727    precision@10 : 0.1683    pop_precision@10 : 0.1306    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 18:49:20 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:50:25 INFO  epoch 34 training [time: 64.72s, train loss: 848.6855]
+Sun 30 Nov 2025 18:51:29 INFO  epoch 35 training [time: 64.15s, train loss: 861.4285]
+Sun 30 Nov 2025 18:51:31 INFO  epoch 35 evaluating [time: 1.84s, valid_score: 0.391800]
+Sun 30 Nov 2025 18:51:31 INFO  valid result: 
+recall@10 : 0.1654    pop_recall@10 : 0.2248    unpop_recall@10 : 0.0632    mrr@10 : 0.3918    pop_mrr@10 : 0.3448    unpop_mrr@10 : 0.085    ndcg@10 : 0.2189    pop_ndcg@10 : 0.2109    unpop_ndcg@10 : 0.0532    hit@10 : 0.7568    pop_hit@10 : 0.677    unpop_hit@10 : 0.2737    precision@10 : 0.1682    pop_precision@10 : 0.1304    unpop_precision@10 : 0.0378
+Sun 30 Nov 2025 18:51:31 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:52:35 INFO  epoch 36 training [time: 64.14s, train loss: 850.0786]
+Sun 30 Nov 2025 18:53:39 INFO  epoch 37 training [time: 64.31s, train loss: 839.3980]
+Sun 30 Nov 2025 18:53:41 INFO  epoch 37 evaluating [time: 1.65s, valid_score: 0.394400]
+Sun 30 Nov 2025 18:53:41 INFO  valid result: 
+recall@10 : 0.1665    pop_recall@10 : 0.2268    unpop_recall@10 : 0.0632    mrr@10 : 0.3944    pop_mrr@10 : 0.3478    unpop_mrr@10 : 0.0844    ndcg@10 : 0.2205    pop_ndcg@10 : 0.213    unpop_ndcg@10 : 0.0528    hit@10 : 0.7608    pop_hit@10 : 0.6816    unpop_hit@10 : 0.2724    precision@10 : 0.1696    pop_precision@10 : 0.1322    unpop_precision@10 : 0.0375
+Sun 30 Nov 2025 18:53:41 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:54:45 INFO  epoch 38 training [time: 64.12s, train loss: 827.2828]
+Sun 30 Nov 2025 18:55:51 INFO  epoch 39 training [time: 65.25s, train loss: 849.2954]
+Sun 30 Nov 2025 18:55:52 INFO  epoch 39 evaluating [time: 1.49s, valid_score: 0.394700]
+Sun 30 Nov 2025 18:55:52 INFO  valid result: 
+recall@10 : 0.1665    pop_recall@10 : 0.226    unpop_recall@10 : 0.0635    mrr@10 : 0.3947    pop_mrr@10 : 0.3479    unpop_mrr@10 : 0.0849    ndcg@10 : 0.2203    pop_ndcg@10 : 0.2125    unpop_ndcg@10 : 0.0532    hit@10 : 0.7579    pop_hit@10 : 0.6786    unpop_hit@10 : 0.2732    precision@10 : 0.1692    pop_precision@10 : 0.1314    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 18:55:52 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:56:58 INFO  epoch 40 training [time: 66.07s, train loss: 852.1630]
+Sun 30 Nov 2025 18:58:03 INFO  epoch 41 training [time: 65.13s, train loss: 864.6781]
+Sun 30 Nov 2025 18:58:05 INFO  epoch 41 evaluating [time: 1.59s, valid_score: 0.396700]
+Sun 30 Nov 2025 18:58:05 INFO  valid result: 
+recall@10 : 0.1674    pop_recall@10 : 0.228    unpop_recall@10 : 0.0633    mrr@10 : 0.3967    pop_mrr@10 : 0.3507    unpop_mrr@10 : 0.0838    ndcg@10 : 0.2218    pop_ndcg@10 : 0.2149    unpop_ndcg@10 : 0.0525    hit@10 : 0.7586    pop_hit@10 : 0.681    unpop_hit@10 : 0.2687    precision@10 : 0.17    pop_precision@10 : 0.1331    unpop_precision@10 : 0.037
+Sun 30 Nov 2025 18:58:05 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 18:59:12 INFO  epoch 42 training [time: 66.45s, train loss: 845.8508]
+Sun 30 Nov 2025 19:00:18 INFO  epoch 43 training [time: 66.20s, train loss: 860.7352]
+Sun 30 Nov 2025 19:00:19 INFO  epoch 43 evaluating [time: 1.44s, valid_score: 0.394700]
+Sun 30 Nov 2025 19:00:19 INFO  valid result: 
+recall@10 : 0.1663    pop_recall@10 : 0.2266    unpop_recall@10 : 0.0631    mrr@10 : 0.3947    pop_mrr@10 : 0.3476    unpop_mrr@10 : 0.0858    ndcg@10 : 0.2208    pop_ndcg@10 : 0.213    unpop_ndcg@10 : 0.0532    hit@10 : 0.7579    pop_hit@10 : 0.6801    unpop_hit@10 : 0.2728    precision@10 : 0.1694    pop_precision@10 : 0.1319    unpop_precision@10 : 0.0375
+Sun 30 Nov 2025 19:01:26 INFO  epoch 44 training [time: 66.37s, train loss: 867.5518]
+Sun 30 Nov 2025 19:02:25 INFO  epoch 45 training [time: 59.42s, train loss: 852.8481]
+Sun 30 Nov 2025 19:02:26 INFO  epoch 45 evaluating [time: 0.59s, valid_score: 0.395900]
+Sun 30 Nov 2025 19:02:26 INFO  valid result: 
+recall@10 : 0.1677    pop_recall@10 : 0.2284    unpop_recall@10 : 0.0636    mrr@10 : 0.3959    pop_mrr@10 : 0.3497    unpop_mrr@10 : 0.0847    ndcg@10 : 0.2219    pop_ndcg@10 : 0.2144    unpop_ndcg@10 : 0.0532    hit@10 : 0.7591    pop_hit@10 : 0.6821    unpop_hit@10 : 0.272    precision@10 : 0.1704    pop_precision@10 : 0.1328    unpop_precision@10 : 0.0376
+Sun 30 Nov 2025 19:03:14 INFO  epoch 46 training [time: 48.71s, train loss: 873.0453]
+Sun 30 Nov 2025 19:04:03 INFO  epoch 47 training [time: 48.50s, train loss: 858.5783]
+Sun 30 Nov 2025 19:04:03 INFO  epoch 47 evaluating [time: 0.48s, valid_score: 0.395900]
+Sun 30 Nov 2025 19:04:03 INFO  valid result: 
+recall@10 : 0.1677    pop_recall@10 : 0.229    unpop_recall@10 : 0.0632    mrr@10 : 0.3959    pop_mrr@10 : 0.3496    unpop_mrr@10 : 0.084    ndcg@10 : 0.2223    pop_ndcg@10 : 0.2152    unpop_ndcg@10 : 0.0527    hit@10 : 0.7599    pop_hit@10 : 0.6831    unpop_hit@10 : 0.2675    precision@10 : 0.1708    pop_precision@10 : 0.1338    unpop_precision@10 : 0.0371
+Sun 30 Nov 2025 19:04:52 INFO  epoch 48 training [time: 48.45s, train loss: 842.6922]
+Sun 30 Nov 2025 19:05:40 INFO  epoch 49 training [time: 48.66s, train loss: 875.2308]
+Sun 30 Nov 2025 19:05:41 INFO  epoch 49 evaluating [time: 0.59s, valid_score: 0.394900]
+Sun 30 Nov 2025 19:05:41 INFO  valid result: 
+recall@10 : 0.1682    pop_recall@10 : 0.2286    unpop_recall@10 : 0.0644    mrr@10 : 0.3949    pop_mrr@10 : 0.3476    unpop_mrr@10 : 0.0853    ndcg@10 : 0.2218    pop_ndcg@10 : 0.214    unpop_ndcg@10 : 0.0535    hit@10 : 0.7611    pop_hit@10 : 0.6818    unpop_hit@10 : 0.2707    precision@10 : 0.1703    pop_precision@10 : 0.1328    unpop_precision@10 : 0.0375
+Sun 30 Nov 2025 19:06:30 INFO  epoch 50 training [time: 49.06s, train loss: 869.3966]
+Sun 30 Nov 2025 19:07:19 INFO  epoch 51 training [time: 48.50s, train loss: 875.8266]
+Sun 30 Nov 2025 19:07:19 INFO  epoch 51 evaluating [time: 0.57s, valid_score: 0.397500]
+Sun 30 Nov 2025 19:07:19 INFO  valid result: 
+recall@10 : 0.1687    pop_recall@10 : 0.23    unpop_recall@10 : 0.0638    mrr@10 : 0.3975    pop_mrr@10 : 0.3513    unpop_mrr@10 : 0.0837    ndcg@10 : 0.223    pop_ndcg@10 : 0.216    unpop_ndcg@10 : 0.0528    hit@10 : 0.7632    pop_hit@10 : 0.6854    unpop_hit@10 : 0.2675    precision@10 : 0.1713    pop_precision@10 : 0.1344    unpop_precision@10 : 0.0369
+Sun 30 Nov 2025 19:07:19 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:08:08 INFO  epoch 52 training [time: 48.52s, train loss: 868.9139]
+Sun 30 Nov 2025 19:08:57 INFO  epoch 53 training [time: 48.89s, train loss: 877.6149]
+Sun 30 Nov 2025 19:08:57 INFO  epoch 53 evaluating [time: 0.60s, valid_score: 0.397700]
+Sun 30 Nov 2025 19:08:57 INFO  valid result: 
+recall@10 : 0.1679    pop_recall@10 : 0.2275    unpop_recall@10 : 0.065    mrr@10 : 0.3977    pop_mrr@10 : 0.35    unpop_mrr@10 : 0.0861    ndcg@10 : 0.2222    pop_ndcg@10 : 0.214    unpop_ndcg@10 : 0.0539    hit@10 : 0.7603    pop_hit@10 : 0.6811    unpop_hit@10 : 0.2728    precision@10 : 0.1704    pop_precision@10 : 0.1326    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 19:08:57 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:09:46 INFO  epoch 54 training [time: 48.65s, train loss: 888.9059]
+Sun 30 Nov 2025 19:10:35 INFO  epoch 55 training [time: 48.75s, train loss: 871.7538]
+Sun 30 Nov 2025 19:10:35 INFO  epoch 55 evaluating [time: 0.58s, valid_score: 0.397300]
+Sun 30 Nov 2025 19:10:35 INFO  valid result: 
+recall@10 : 0.168    pop_recall@10 : 0.2286    unpop_recall@10 : 0.0637    mrr@10 : 0.3973    pop_mrr@10 : 0.3506    unpop_mrr@10 : 0.0845    ndcg@10 : 0.2225    pop_ndcg@10 : 0.2153    unpop_ndcg@10 : 0.0529    hit@10 : 0.7623    pop_hit@10 : 0.6841    unpop_hit@10 : 0.2685    precision@10 : 0.1707    pop_precision@10 : 0.1336    unpop_precision@10 : 0.0371
+Sun 30 Nov 2025 19:11:24 INFO  epoch 56 training [time: 48.54s, train loss: 870.6352]
+Sun 30 Nov 2025 19:12:13 INFO  epoch 57 training [time: 48.89s, train loss: 875.0794]
+Sun 30 Nov 2025 19:12:13 INFO  epoch 57 evaluating [time: 0.59s, valid_score: 0.397700]
+Sun 30 Nov 2025 19:12:13 INFO  valid result: 
+recall@10 : 0.1688    pop_recall@10 : 0.2294    unpop_recall@10 : 0.0636    mrr@10 : 0.3977    pop_mrr@10 : 0.3511    unpop_mrr@10 : 0.0844    ndcg@10 : 0.223    pop_ndcg@10 : 0.2158    unpop_ndcg@10 : 0.0529    hit@10 : 0.7631    pop_hit@10 : 0.6848    unpop_hit@10 : 0.269    precision@10 : 0.1713    pop_precision@10 : 0.1342    unpop_precision@10 : 0.0371
+Sun 30 Nov 2025 19:12:14 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:13:02 INFO  epoch 58 training [time: 48.69s, train loss: 885.3698]
+Sun 30 Nov 2025 19:13:51 INFO  epoch 59 training [time: 48.54s, train loss: 874.2913]
+Sun 30 Nov 2025 19:13:51 INFO  epoch 59 evaluating [time: 0.58s, valid_score: 0.398700]
+Sun 30 Nov 2025 19:13:51 INFO  valid result: 
+recall@10 : 0.1693    pop_recall@10 : 0.2299    unpop_recall@10 : 0.0644    mrr@10 : 0.3987    pop_mrr@10 : 0.3519    unpop_mrr@10 : 0.0844    ndcg@10 : 0.2239    pop_ndcg@10 : 0.2167    unpop_ndcg@10 : 0.0531    hit@10 : 0.7627    pop_hit@10 : 0.6846    unpop_hit@10 : 0.2702    precision@10 : 0.1721    pop_precision@10 : 0.135    unpop_precision@10 : 0.037
+Sun 30 Nov 2025 19:13:51 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:14:40 INFO  epoch 60 training [time: 48.72s, train loss: 890.5236]
+Sun 30 Nov 2025 19:15:28 INFO  epoch 61 training [time: 47.92s, train loss: 905.7954]
+Sun 30 Nov 2025 19:15:29 INFO  epoch 61 evaluating [time: 0.48s, valid_score: 0.400100]
+Sun 30 Nov 2025 19:15:29 INFO  valid result: 
+recall@10 : 0.1692    pop_recall@10 : 0.2293    unpop_recall@10 : 0.0645    mrr@10 : 0.4001    pop_mrr@10 : 0.3529    unpop_mrr@10 : 0.0853    ndcg@10 : 0.224    pop_ndcg@10 : 0.2164    unpop_ndcg@10 : 0.0534    hit@10 : 0.7618    pop_hit@10 : 0.6834    unpop_hit@10 : 0.27    precision@10 : 0.1716    pop_precision@10 : 0.1343    unpop_precision@10 : 0.0373
+Sun 30 Nov 2025 19:15:29 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:16:16 INFO  epoch 62 training [time: 47.38s, train loss: 900.4831]
+Sun 30 Nov 2025 19:17:04 INFO  epoch 63 training [time: 47.54s, train loss: 921.0861]
+Sun 30 Nov 2025 19:17:04 INFO  epoch 63 evaluating [time: 0.54s, valid_score: 0.400900]
+Sun 30 Nov 2025 19:17:04 INFO  valid result: 
+recall@10 : 0.1693    pop_recall@10 : 0.2302    unpop_recall@10 : 0.0646    mrr@10 : 0.4009    pop_mrr@10 : 0.3536    unpop_mrr@10 : 0.0853    ndcg@10 : 0.2244    pop_ndcg@10 : 0.2168    unpop_ndcg@10 : 0.0536    hit@10 : 0.7641    pop_hit@10 : 0.6863    unpop_hit@10 : 0.2717    precision@10 : 0.1722    pop_precision@10 : 0.1347    unpop_precision@10 : 0.0375
+Sun 30 Nov 2025 19:17:04 INFO  Saving current: saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:17:52 INFO  epoch 64 training [time: 47.91s, train loss: 907.8449]
+Sun 30 Nov 2025 19:18:40 INFO  epoch 65 training [time: 48.27s, train loss: 891.1804]
+Sun 30 Nov 2025 19:18:41 INFO  epoch 65 evaluating [time: 0.61s, valid_score: 0.400400]
+Sun 30 Nov 2025 19:18:41 INFO  valid result: 
+recall@10 : 0.169    pop_recall@10 : 0.2298    unpop_recall@10 : 0.0646    mrr@10 : 0.4004    pop_mrr@10 : 0.3533    unpop_mrr@10 : 0.0846    ndcg@10 : 0.2238    pop_ndcg@10 : 0.2166    unpop_ndcg@10 : 0.0531    hit@10 : 0.7637    pop_hit@10 : 0.6858    unpop_hit@10 : 0.2689    precision@10 : 0.1714    pop_precision@10 : 0.1345    unpop_precision@10 : 0.0369
+Sun 30 Nov 2025 19:19:30 INFO  epoch 66 training [time: 48.50s, train loss: 889.2735]
+Sun 30 Nov 2025 19:20:18 INFO  epoch 67 training [time: 48.46s, train loss: 888.3333]
+Sun 30 Nov 2025 19:20:19 INFO  epoch 67 evaluating [time: 0.58s, valid_score: 0.399600]
+Sun 30 Nov 2025 19:20:19 INFO  valid result: 
+recall@10 : 0.1691    pop_recall@10 : 0.2294    unpop_recall@10 : 0.0649    mrr@10 : 0.3996    pop_mrr@10 : 0.3514    unpop_mrr@10 : 0.0862    ndcg@10 : 0.2238    pop_ndcg@10 : 0.2157    unpop_ndcg@10 : 0.0539    hit@10 : 0.7647    pop_hit@10 : 0.6848    unpop_hit@10 : 0.273    precision@10 : 0.1718    pop_precision@10 : 0.1341    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 19:21:07 INFO  epoch 68 training [time: 48.81s, train loss: 905.7304]
+Sun 30 Nov 2025 19:21:56 INFO  epoch 69 training [time: 48.56s, train loss: 912.7623]
+Sun 30 Nov 2025 19:21:57 INFO  epoch 69 evaluating [time: 0.63s, valid_score: 0.399800]
+Sun 30 Nov 2025 19:21:57 INFO  valid result: 
+recall@10 : 0.1686    pop_recall@10 : 0.229    unpop_recall@10 : 0.0648    mrr@10 : 0.3998    pop_mrr@10 : 0.3521    unpop_mrr@10 : 0.0855    ndcg@10 : 0.2237    pop_ndcg@10 : 0.216    unpop_ndcg@10 : 0.0536    hit@10 : 0.7636    pop_hit@10 : 0.6843    unpop_hit@10 : 0.2714    precision@10 : 0.1717    pop_precision@10 : 0.1343    unpop_precision@10 : 0.0374
+Sun 30 Nov 2025 19:22:45 INFO  epoch 70 training [time: 48.67s, train loss: 923.7542]
+Sun 30 Nov 2025 19:23:34 INFO  epoch 71 training [time: 48.50s, train loss: 936.1919]
+Sun 30 Nov 2025 19:23:34 INFO  epoch 71 evaluating [time: 0.57s, valid_score: 0.399500]
+Sun 30 Nov 2025 19:23:34 INFO  valid result: 
+recall@10 : 0.1688    pop_recall@10 : 0.2288    unpop_recall@10 : 0.065    mrr@10 : 0.3995    pop_mrr@10 : 0.352    unpop_mrr@10 : 0.0856    ndcg@10 : 0.224    pop_ndcg@10 : 0.2161    unpop_ndcg@10 : 0.0537    hit@10 : 0.7632    pop_hit@10 : 0.6841    unpop_hit@10 : 0.2727    precision@10 : 0.1721    pop_precision@10 : 0.1345    unpop_precision@10 : 0.0375
+Sun 30 Nov 2025 19:24:23 INFO  epoch 72 training [time: 48.80s, train loss: 944.7626]
+Sun 30 Nov 2025 19:25:12 INFO  epoch 73 training [time: 48.59s, train loss: 925.9379]
+Sun 30 Nov 2025 19:25:12 INFO  epoch 73 evaluating [time: 0.60s, valid_score: 0.400400]
+Sun 30 Nov 2025 19:25:12 INFO  valid result: 
+recall@10 : 0.1685    pop_recall@10 : 0.2291    unpop_recall@10 : 0.0644    mrr@10 : 0.4004    pop_mrr@10 : 0.3526    unpop_mrr@10 : 0.0857    ndcg@10 : 0.2237    pop_ndcg@10 : 0.216    unpop_ndcg@10 : 0.0535    hit@10 : 0.7646    pop_hit@10 : 0.6846    unpop_hit@10 : 0.2699    precision@10 : 0.1715    pop_precision@10 : 0.1344    unpop_precision@10 : 0.0372
+Sun 30 Nov 2025 19:26:01 INFO  epoch 74 training [time: 48.33s, train loss: 904.8701]
+Sun 30 Nov 2025 19:26:49 INFO  epoch 75 training [time: 48.44s, train loss: 917.0313]
+Sun 30 Nov 2025 19:26:50 INFO  epoch 75 evaluating [time: 0.59s, valid_score: 0.398700]
+Sun 30 Nov 2025 19:26:50 INFO  valid result: 
+recall@10 : 0.1685    pop_recall@10 : 0.2281    unpop_recall@10 : 0.0651    mrr@10 : 0.3987    pop_mrr@10 : 0.3513    unpop_mrr@10 : 0.0849    ndcg@10 : 0.2235    pop_ndcg@10 : 0.2159    unpop_ndcg@10 : 0.0535    hit@10 : 0.7644    pop_hit@10 : 0.6828    unpop_hit@10 : 0.2714    precision@10 : 0.1717    pop_precision@10 : 0.1345    unpop_precision@10 : 0.0372
+Sun 30 Nov 2025 19:27:38 INFO  epoch 76 training [time: 48.60s, train loss: 916.9690]
+Sun 30 Nov 2025 19:28:27 INFO  epoch 77 training [time: 48.35s, train loss: 932.9908]
+Sun 30 Nov 2025 19:28:27 INFO  epoch 77 evaluating [time: 0.58s, valid_score: 0.399700]
+Sun 30 Nov 2025 19:28:27 INFO  valid result: 
+recall@10 : 0.1687    pop_recall@10 : 0.2283    unpop_recall@10 : 0.065    mrr@10 : 0.3997    pop_mrr@10 : 0.3518    unpop_mrr@10 : 0.0857    ndcg@10 : 0.2239    pop_ndcg@10 : 0.2162    unpop_ndcg@10 : 0.0536    hit@10 : 0.7654    pop_hit@10 : 0.6841    unpop_hit@10 : 0.2727    precision@10 : 0.172    pop_precision@10 : 0.1346    unpop_precision@10 : 0.0373
+Sun 30 Nov 2025 19:29:16 INFO  epoch 78 training [time: 48.78s, train loss: 904.2688]
+Sun 30 Nov 2025 19:30:04 INFO  epoch 79 training [time: 48.47s, train loss: 901.0282]
+Sun 30 Nov 2025 19:30:05 INFO  epoch 79 evaluating [time: 0.60s, valid_score: 0.400200]
+Sun 30 Nov 2025 19:30:05 INFO  valid result: 
+recall@10 : 0.1687    pop_recall@10 : 0.2282    unpop_recall@10 : 0.0647    mrr@10 : 0.4002    pop_mrr@10 : 0.3525    unpop_mrr@10 : 0.0855    ndcg@10 : 0.2236    pop_ndcg@10 : 0.2159    unpop_ndcg@10 : 0.0535    hit@10 : 0.7642    pop_hit@10 : 0.6839    unpop_hit@10 : 0.271    precision@10 : 0.1717    pop_precision@10 : 0.1344    unpop_precision@10 : 0.0373
+Sun 30 Nov 2025 19:30:53 INFO  epoch 80 training [time: 48.31s, train loss: 911.8068]
+Sun 30 Nov 2025 19:31:42 INFO  epoch 81 training [time: 48.40s, train loss: 943.8340]
+Sun 30 Nov 2025 19:31:42 INFO  epoch 81 evaluating [time: 0.59s, valid_score: 0.400300]
+Sun 30 Nov 2025 19:31:42 INFO  valid result: 
+recall@10 : 0.1685    pop_recall@10 : 0.2287    unpop_recall@10 : 0.0646    mrr@10 : 0.4003    pop_mrr@10 : 0.3529    unpop_mrr@10 : 0.0849    ndcg@10 : 0.2238    pop_ndcg@10 : 0.2163    unpop_ndcg@10 : 0.0532    hit@10 : 0.7641    pop_hit@10 : 0.6843    unpop_hit@10 : 0.2694    precision@10 : 0.1718    pop_precision@10 : 0.1349    unpop_precision@10 : 0.037
+Sun 30 Nov 2025 19:32:31 INFO  epoch 82 training [time: 48.45s, train loss: 932.8660]
+Sun 30 Nov 2025 19:33:20 INFO  epoch 83 training [time: 48.76s, train loss: 933.5715]
+Sun 30 Nov 2025 19:33:20 INFO  epoch 83 evaluating [time: 0.58s, valid_score: 0.399300]
+Sun 30 Nov 2025 19:33:20 INFO  valid result: 
+recall@10 : 0.1683    pop_recall@10 : 0.2276    unpop_recall@10 : 0.0653    mrr@10 : 0.3993    pop_mrr@10 : 0.3511    unpop_mrr@10 : 0.0863    ndcg@10 : 0.2232    pop_ndcg@10 : 0.215    unpop_ndcg@10 : 0.054    hit@10 : 0.7647    pop_hit@10 : 0.6841    unpop_hit@10 : 0.2738    precision@10 : 0.1714    pop_precision@10 : 0.1337    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 19:34:08 INFO  epoch 84 training [time: 48.31s, train loss: 919.8123]
+Sun 30 Nov 2025 19:34:57 INFO  epoch 85 training [time: 48.48s, train loss: 914.4623]
+Sun 30 Nov 2025 19:34:58 INFO  epoch 85 evaluating [time: 0.58s, valid_score: 0.398500]
+Sun 30 Nov 2025 19:34:58 INFO  valid result: 
+recall@10 : 0.1679    pop_recall@10 : 0.2267    unpop_recall@10 : 0.0653    mrr@10 : 0.3985    pop_mrr@10 : 0.3506    unpop_mrr@10 : 0.0861    ndcg@10 : 0.223    pop_ndcg@10 : 0.2146    unpop_ndcg@10 : 0.054    hit@10 : 0.7656    pop_hit@10 : 0.6836    unpop_hit@10 : 0.2745    precision@10 : 0.1712    pop_precision@10 : 0.1334    unpop_precision@10 : 0.0377
+Sun 30 Nov 2025 19:34:58 INFO  Finished training, best eval result in epoch 63
+Sun 30 Nov 2025 19:34:58 INFO  Loading model structure and parameters from saved/FairLightGCN-Nov-30-2025_18-11-42.pth
+Sun 30 Nov 2025 19:34:58 INFO  count    1392.000000
+mean       43.390805
+std        65.998907
+min         1.000000
+25%         3.000000
+50%        18.000000
+75%        55.000000
+max       527.000000
+dtype: float64
+Sun 30 Nov 2025 19:34:59 INFO  The running environment of this training is as follows:
++-------------+-----------------+
+| Environment |      Usage      |
++=============+=================+
+| CPU         |     18.50 %     |
++-------------+-----------------+
+| GPU         | 0.29 G/47.53 G  |
++-------------+-----------------+
+| Memory      | 2.01 G/251.48 G |
++-------------+-----------------+
+Sun 30 Nov 2025 19:34:59 INFO  best valid : OrderedDict([('recall@10', 0.1693), ('pop_recall@10', 0.2302), ('unpop_recall@10', 0.0646), ('mrr@10', 0.4009), ('pop_mrr@10', 0.3536), ('unpop_mrr@10', 0.0853), ('ndcg@10', 0.2244), ('pop_ndcg@10', 0.2168), ('unpop_ndcg@10', 0.0536), ('hit@10', 0.7641), ('pop_hit@10', 0.6863), ('unpop_hit@10', 0.2717), ('precision@10', 0.1722), ('pop_precision@10', 0.1347), ('unpop_precision@10', 0.0375)])
+Sun 30 Nov 2025 19:34:59 INFO  test result: OrderedDict([('recall@10', 0.1897827152317881), ('pop_recall@10', 0.25348687086092714), ('unpop_recall@10', 0.08001092715231788), ('mrr@10', 0.4798106125827814), ('pop_mrr@10', 0.42099150662251655), ('unpop_mrr@10', 0.11623693708609271), ('ndcg@10', 0.2810378642384106), ('pop_ndcg@10', 0.2597568046357616), ('unpop_ndcg@10', 0.07322062913907285), ('hit@10', 0.7908940397350993), ('pop_hit@10', 0.7104304635761589), ('unpop_hit@10', 0.3293046357615894), ('precision@10', 0.21413907284768213), ('pop_precision@10', 0.16218543046357617), ('unpop_precision@10', 0.051953642384105964)])
