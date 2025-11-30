@@ -9,9 +9,7 @@
 
 import argparse
 import logging
-from cgi import parse
 
-from numpy.conftest import dtype
 
 # logging.disable(logging.WARNING)
 
@@ -52,12 +50,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cl_rate",
         type=float,
+        default=0.2,
         help="cl learning rate"
     )
     parser.add_argument(
         "--enable_user_loss",
         type=bool,
-        default=False,
+        default=True,
     )
     parser.add_argument(
         "--item_loss_type",
@@ -90,6 +89,12 @@ if __name__ == "__main__":
         default=0.2
     )
 
+    parser.add_argument(
+        "--train_batch_size",
+        type=int,
+        default=None
+    )
+
     args, _ = parser.parse_known_args()
 
     config_file_list = (
@@ -106,4 +111,5 @@ if __name__ == "__main__":
         port=args.port,
         group_offset=args.group_offset,
         devices=args.gpu_ids,
+        args=vars(args)
     )

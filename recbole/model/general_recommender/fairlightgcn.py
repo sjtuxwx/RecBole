@@ -197,7 +197,7 @@ class FairLightGCN(GeneralRecommender):
             return emb
             
     def get_user_cl_loss_fn(self, user_view1, user_view2):
-        if self.enable_user_loss is False:
+        if self.enable_user_loss in [None, False]:
             return 0
         else:
             return InfoNCE(user_view1, user_view2)

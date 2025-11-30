@@ -66,7 +66,7 @@ class Config(object):
     """
 
     def __init__(
-        self, model=None, dataset=None, config_file_list=None, config_dict=None, devices=None
+        self, model=None, dataset=None, config_file_list=None, config_dict=None, devices=None, args=None
     ):
         """
         Args:
@@ -95,6 +95,17 @@ class Config(object):
         self._set_train_neg_sample_args()
         self._set_eval_neg_sample_args("valid")
         self._set_eval_neg_sample_args("test")
+
+        self.__set_external_args(args)
+
+    def __set_external_args(self, args):
+        if args is None:
+            return
+        filtered_args = {}
+        for k, v in args.items():
+            if v is not None:
+                filtered_args[k] = v
+        self.final_config_dict.update(filtered_args)
 
     def _init_parameters_category(self):
         self.parameters = dict()

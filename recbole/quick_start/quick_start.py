@@ -50,6 +50,7 @@ def run(
     port="5678",
     group_offset=0,
     devices=None,
+    args=None
 ):
     if nproc == 1 and world_size <= 0:
         res = run_recbole(
@@ -59,6 +60,7 @@ def run(
             config_dict=config_dict,
             saved=saved,
             devices=devices,
+            args=args
         )
     else:
         if world_size == -1:
@@ -104,6 +106,7 @@ def run_recbole(
     devices=None,
     saved=True,
     queue=None,
+    args=None
 ):
     r"""A fast running api, which includes the complete process of
     training and testing a model on a specified dataset
@@ -123,6 +126,7 @@ def run_recbole(
         config_file_list=config_file_list,
         config_dict=config_dict,
         devices=devices,
+        args=args
     )
     init_seed(config["seed"], config["reproducibility"])
     # logger initialization
@@ -135,7 +139,7 @@ def run_recbole(
     dataset = create_dataset(config)
     logger.info(dataset)
     
-    context = Context(dataset.user_num, dataset.item_num)
+    context = Context(dataset.user_num, dataset.item_num, config["pop_rate"])
 
     # dataset splitting
     train_data, valid_data, test_data = data_preparation(config, dataset, context)

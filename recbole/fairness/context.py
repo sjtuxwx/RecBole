@@ -10,11 +10,12 @@ from recbole.fairness.pop_utils import InfoNCE, split_by_pop
 from .pop_utils import split_by_pop_non_del, split_by_pop_ratio
 
 class Context(object):
-    def __init__(self, n_users, n_items):
+    def __init__(self, n_users, n_items, pop_rate):
         self.n_users = n_users
         self.n_items = n_items
         self.itempop = None
         self.user_interact = None
+        self.pop_rate = pop_rate
     def to(self, device):
         # 将所有self.属性搬到指定device
         if self.itempop is not None:
@@ -28,5 +29,5 @@ class Context(object):
     def add_item_popularity(self, itempop):
         self.itempop = itempop
         self.unpop_item, self.pop_item = split_by_pop_ratio(
-            torch.arange(self.n_items), self.itempop, with_zero=True, ratio=0.2
+            torch.arange(self.n_items), self.itempop, with_zero=True, ratio=self.pop_rate
         )
