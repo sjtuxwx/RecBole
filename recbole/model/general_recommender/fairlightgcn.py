@@ -388,7 +388,8 @@ class FairLightGCN(GeneralRecommender):
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
         item_popularity = interaction['popularity'][:, 1]
         item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        return loss + self.item_rq_loss_rate * rq_loss + 0.2 * self.pop_recontruct_loss(pop_out, item_embedding)
+        pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
+        return loss + self.item_rq_loss_rate * rq_loss + config['pop_loss_rate'] * pop_loss
 
     def pop_recontruct_loss(self, pop_out, pop_embedding):
         # 计算 pop_out 与 pop_embedding 的余弦相似度损失

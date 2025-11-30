@@ -117,6 +117,12 @@ if __name__ == "__main__":
         type=str,
         default="debug"
     )
+    
+    parser.add_argument(
+        "--pop_loss_rate",
+        type=float,
+        default=0.2
+    )
 
     args, _ = parser.parse_known_args()
 
