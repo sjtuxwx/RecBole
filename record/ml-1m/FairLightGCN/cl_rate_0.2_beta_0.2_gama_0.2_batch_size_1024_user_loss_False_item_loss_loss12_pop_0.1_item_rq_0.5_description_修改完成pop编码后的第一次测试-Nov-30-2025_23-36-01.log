@@ -223,3 +223,14 @@ Sun 30 Nov 2025 23:39:26 INFO  epoch 3 training [time: 49.03s, train loss: 1100.
 Sun 30 Nov 2025 23:39:26 INFO  epoch 3 evaluating [time: 0.46s, valid_score: 0.215700]
 Sun 30 Nov 2025 23:39:26 INFO  valid result: 
 recall@10 : 0.0837    pop_recall@10 : 0.0892    unpop_recall@10 : 0.062    mrr@10 : 0.2157    pop_mrr@10 : 0.1545    unpop_mrr@10 : 0.0792    ndcg@10 : 0.1044    pop_ndcg@10 : 0.0809    unpop_ndcg@10 : 0.0486    hit@10 : 0.523    pop_hit@10 : 0.3747    unpop_hit@10 : 0.2487    precision@10 : 0.0805    pop_precision@10 : 0.0494    unpop_precision@10 : 0.0312
+Sun 30 Nov 2025 23:40:02 INFO  epoch 4 training [time: 35.41s, train loss: 1107.1691]
+Sun 30 Nov 2025 23:40:51 INFO  epoch 5 training [time: 49.10s, train loss: 1116.5805]
+Sun 30 Nov 2025 23:40:51 INFO  epoch 5 evaluating [time: 0.46s, valid_score: 0.217900]
+Sun 30 Nov 2025 23:40:51 INFO  valid result: 
+recall@10 : 0.0823    pop_recall@10 : 0.0792    unpop_recall@10 : 0.0699    mrr@10 : 0.2179    pop_mrr@10 : 0.1382    unpop_mrr@10 : 0.0988    ndcg@10 : 0.1045    pop_ndcg@10 : 0.0709    unpop_ndcg@10 : 0.0588    hit@10 : 0.5167    pop_hit@10 : 0.3348    unpop_hit@10 : 0.2841    precision@10 : 0.08    pop_precision@10 : 0.0419    unpop_precision@10 : 0.0382
+Sun 30 Nov 2025 23:41:40 INFO  epoch 6 training [time: 49.09s, train loss: 1121.0914]
+Sun 30 Nov 2025 23:42:30 INFO  epoch 7 training [time: 49.27s, train loss: 1127.3951]
+Sun 30 Nov 2025 23:42:30 INFO  epoch 7 evaluating [time: 0.47s, valid_score: 0.198900]
+Sun 30 Nov 2025 23:42:30 INFO  valid result: 
+recall@10 : 0.0741    pop_recall@10 : 0.0572    unpop_recall@10 : 0.0764    mrr@10 : 0.1989    pop_mrr@10 : 0.0953    unpop_mrr@10 : 0.1192    ndcg@10 : 0.094    pop_ndcg@10 : 0.0483    unpop_ndcg@10 : 0.0689    hit@10 : 0.4644    pop_hit@10 : 0.2318    unpop_hit@10 : 0.3108    precision@10 : 0.0706    pop_precision@10 : 0.0267    unpop_precision@10 : 0.0439
+Sun 30 Nov 2025 23:43:19 INFO  epoch 8 training [time: 49.22s, train loss: 1143.1781]
