@@ -125,8 +125,9 @@ class FairLightGCN(GeneralRecommender):
         # else:
         #     self.eps = 0.2
         self.gen_extra_embedding()
-
-        self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1),
+        
+        # 这里需要去掉 popularity 这个 extra_info
+        self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1 - 1),
                   num_emb_list=[8, 8, 8],
                   e_dim=16,
                   layers=[64, 32],
