@@ -312,3 +312,7 @@ Mon 01 Dec 2025 01:00:39 INFO  valid result:
 recall@10 : 0.1652    pop_recall@10 : 0.2247    unpop_recall@10 : 0.0633    mrr@10 : 0.3955    pop_mrr@10 : 0.3468    unpop_mrr@10 : 0.0875    ndcg@10 : 0.2201    pop_ndcg@10 : 0.2111    unpop_ndcg@10 : 0.054    hit@10 : 0.7558    pop_hit@10 : 0.676    unpop_hit@10 : 0.2755    precision@10 : 0.1689    pop_precision@10 : 0.1306    unpop_precision@10 : 0.0384
 Mon 01 Dec 2025 01:00:39 INFO  Saving current: saved/FairLightGCN-Dec-01-2025_00-27-44.pth
 Mon 01 Dec 2025 01:01:29 INFO  epoch 42 training [time: 49.84s, train loss: 784.0597]
+Mon 01 Dec 2025 01:02:20 INFO  epoch 43 training [time: 50.69s, train loss: 782.9253]
+Mon 01 Dec 2025 01:02:20 INFO  epoch 43 evaluating [time: 0.49s, valid_score: 0.395400]
+Mon 01 Dec 2025 01:02:20 INFO  valid result: 
+recall@10 : 0.1652    pop_recall@10 : 0.2243    unpop_recall@10 : 0.0641    mrr@10 : 0.3954    pop_mrr@10 : 0.3455    unpop_mrr@10 : 0.0893    ndcg@10 : 0.22    pop_ndcg@10 : 0.2103    unpop_ndcg@10 : 0.0549    hit@10 : 0.7566    pop_hit@10 : 0.6753    unpop_hit@10 : 0.2785    precision@10 : 0.1688    pop_precision@10 : 0.13    unpop_precision@10 : 0.0389

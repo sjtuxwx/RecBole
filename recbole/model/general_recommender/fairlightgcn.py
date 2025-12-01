@@ -115,6 +115,11 @@ class FairLightGCN(GeneralRecommender):
             self.item_loss_type = 'full'
         else:
             self.item_loss_type = config['item_loss_type']
+            
+        if config['pop_loss_rate'] is None:
+            self.pop_loss_rate = 0.2
+        else:
+            self.pop_loss_rate = config['pop_loss_rate']
 
         if config['enable_user_loss'] is None:
             self.enable_user_loss = False
@@ -389,8 +394,16 @@ class FairLightGCN(GeneralRecommender):
         item_popularity = interaction['popularity'][:, 1]
         item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
         pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
-        return loss + self.item_rq_loss_rate * rq_loss + config['pop_loss_rate'] * pop_loss
-
+        align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2
+    
+    def pop_item_align_loss(self, pop_out, item_embedding):
+        # 计算 pop_out 与 item_embedding 的余弦相似度损失
+        cos_sim = F.cosine_similarity(pop_out, item_embedding, dim=-1)  # [batch_size]
+        # 最大化余弦相似度 -> 最小化 1 - cos_sim
+        loss = cos_sim
+        return loss.mean()
+     
     def pop_recontruct_loss(self, pop_out, pop_embedding):
         # 计算 pop_out 与 pop_embedding 的余弦相似度损失
         cos_sim = F.cosine_similarity(pop_out, pop_embedding, dim=-1)  # [batch_size]
