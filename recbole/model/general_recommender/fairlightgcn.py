@@ -400,8 +400,8 @@ class FairLightGCN(GeneralRecommender):
     def pop_item_align_loss(self, pop_out, item_embedding):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
         cos_sim = F.cosine_similarity(pop_out, item_embedding, dim=-1)  # [batch_size]
-        # 最大化余弦相似度 -> 最小化 1 - cos_sim
-        loss = cos_sim
+        # 正交约束
+        loss = cos_sim ** 2
         return loss.mean()
      
     def pop_recontruct_loss(self, pop_out, pop_embedding):
