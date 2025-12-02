@@ -159,12 +159,20 @@ def calculate_valid_score(valid_result, valid_metric=None):
 
     Args:
         valid_result (dict): valid result
-        valid_metric (str, optional): the selected metric in valid result for valid score
+        valid_metric (str or list of str, optional): the selected metric in valid result for valid score
 
     Returns:
         float: valid score
     """
     if valid_metric:
+        if isinstance(valid_metric, list):
+            score = 0
+            for metric in valid_metric:
+                if metric in valid_result:
+                    score += valid_result[metric]
+                else:
+                    raise ValueError(f"Metric [{metric}] not found in valid result.")
+            return score
         return valid_result[valid_metric]
     else:
         return valid_result["Recall@10"]

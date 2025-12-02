@@ -395,10 +395,16 @@ class Config(object):
                 "please set `repeatable` as `True`."
             )
 
-        valid_metric = self.final_config_dict["valid_metric"].split("@")[0]
-        self.final_config_dict["valid_metric_bigger"] = (
-            False if valid_metric.lower() in smaller_metrics else True
-        )
+        valid_metric = self.final_config_dict["valid_metric"]
+        if isinstance(valid_metric, list):
+            self.final_config_dict["valid_metric_bigger"] = (
+                False if valid_metric[0].split("@")[0].lower() in smaller_metrics else True
+            )
+        else:
+            valid_metric = valid_metric.split("@")[0]
+            self.final_config_dict["valid_metric_bigger"] = (
+                False if valid_metric.lower() in smaller_metrics else True
+            )
 
         topk = self.final_config_dict["topk"]
         if isinstance(topk, (int, list)):

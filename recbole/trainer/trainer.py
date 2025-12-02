@@ -120,7 +120,11 @@ class Trainer(AbstractTrainer):
         self.eval_step = min(config["eval_step"], self.epochs)
         self.stopping_step = config["stopping_step"]
         self.clip_grad_norm = config["clip_grad_norm"]
-        self.valid_metric = config["valid_metric"].lower()
+        self.valid_metric = config["valid_metric"]
+        if isinstance(self.valid_metric, str):
+            self.valid_metric = self.valid_metric.lower()
+        elif isinstance(self.valid_metric, list):
+            self.valid_metric = [metric.lower() for metric in self.valid_metric]
         self.valid_metric_bigger = config["valid_metric_bigger"]
         self.test_batch_size = config["eval_batch_size"]
         self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
