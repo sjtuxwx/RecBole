@@ -163,8 +163,8 @@ class FairLightGCN(GeneralRecommender):
         #           )
 
     def gen_extra_embedding(self):
-        self.item_extra_embedding = {}
-        self.user_extra_embedding = {}
+        self.item_extra_embedding = torch.nn.ModuleDict()
+        self.user_extra_embedding = torch.nn.ModuleDict()
         for extra_info in self.eInfo['item']:
             aa = torch.nn.Embedding(
                 num_embeddings=self.eInfo['item'][extra_info], embedding_dim=self.latent_dim, device=self.device
