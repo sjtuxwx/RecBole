@@ -375,8 +375,13 @@ class FairLightGCN(GeneralRecommender):
         pos_side_info_processed = self.process_item_side_info(interaction, excluded_info=['popularity'])
         
         # RQ-VAE Forward
-        # Use pop_out (4th return) which is aligned with latent_dim
-        _, _, _, pos_rq_emb = self.rq_model_item(pos_side_info_processed)
+        # Get Feature view (Reconstructed Feature) for pos items
+        # Note: We use the 1st return value 'out' which is the reconstructed feature vector.
+        # The 3rd return value 'indices' contains integer codebook indices, not suitable for projection.
+        pos_rq_feature, _, _, _ = self.rq_model_item(pos_side_info_processed)
+        
+        # Project to latent dimension
+        pos_rq_emb = self.fusion_proj(pos_rq_feature)
         
         # 3. Calculate Contrastive Loss (InfoNCE)
         fusion_loss = InfoNCE(pos_gcn_emb, pos_rq_emb, 0.2)
