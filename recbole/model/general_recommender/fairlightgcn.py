@@ -161,6 +161,14 @@ class FairLightGCN(GeneralRecommender):
         #           sk_epsilons=[0.0, 0.0, 0.0],
         #           sk_iters=50,
         #           )
+        
+        # Fusion projection layer for semantic alignment
+        rq_in_dim = self.latent_dim * (len(self.eInfo['item']) + 1 - 1)
+        self.fusion_proj = torch.nn.Linear(rq_in_dim, self.latent_dim)
+        self.apply(xavier_uniform_initialization)
+
+        # Store all item features for potential usage
+        self.all_item_feat = dataset.get_item_feature().to(self.device)
 
     def gen_extra_embedding(self):
         self.item_extra_embedding = torch.nn.ModuleDict()
@@ -357,7 +365,21 @@ class FairLightGCN(GeneralRecommender):
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
-
+        
+        # Semantic Fusion via Contrastive Learning
+        # 1. Get ID view (GCN embedding) for pos items
+        pos_gcn_emb = pos_embeddings
+        
+        # 2. Get Feature view (RQ-VAE embedding) for pos items
+        # process_item_side_info handles the Interaction object
+        pos_side_info_processed = self.process_item_side_info(interaction, excluded_info=['popularity'])
+        
+        # RQ-VAE Forward
+        # Use pop_out (4th return) which is aligned with latent_dim
+        _, _, _, pos_rq_emb = self.rq_model_item(pos_side_info_processed)
+        
+        # 3. Calculate Contrastive Loss (InfoNCE)
+        fusion_loss = InfoNCE(pos_gcn_emb, pos_rq_emb, 0.2)
 
         context = interaction.context
         context.itempop = context.itempop.to(self.device)
@@ -395,7 +417,7 @@ class FairLightGCN(GeneralRecommender):
         item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
         pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
         align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
-        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2 + 0.1 * fusion_loss
     
     def pop_item_align_loss(self, pop_out, item_embedding):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
