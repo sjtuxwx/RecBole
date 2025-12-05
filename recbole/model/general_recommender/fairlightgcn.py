@@ -390,7 +390,7 @@ class FairLightGCN(GeneralRecommender):
         # user_side_info = self.process_user_side_info(interaction)
         item_popularity = interaction['popularity'][:, 1]
         pop_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        pop_out, rq_loss, indices, out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        pop_out, rq_loss, indices, out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info, item_popularity)
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
 
