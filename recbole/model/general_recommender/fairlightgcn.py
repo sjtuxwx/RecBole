@@ -228,10 +228,10 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices, pop_out = rq_model(data)
-        rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
+        pop_out, rq_loss, indices, residual = rq_model(data)
+        rq_loss_total, rq_rec = rq_model.compute_loss(pop_out, rq_loss, xs=data)
+        return pop_out, rq_loss_total, indices, pop_out
 
-        return out, rq_loss_total, indices, pop_out
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
@@ -388,14 +388,15 @@ class FairLightGCN(GeneralRecommender):
 
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
         user_side_info = self.process_user_side_info(interaction)
-        out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        item_popularity = interaction['popularity'][:, 1]
+        pop_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
+        pop_out, rq_loss, indices, out = self.forward_rq_item_epoch(self.rq_model_item, pop_embedding)
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        item_popularity = interaction['popularity'][:, 1]
-        item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
+
+        recon_loss = self.recontruct_loss(out, item_all_embeddings[pos_item])
         align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
-        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (recon_loss + align_loss) / 2
     
     def pop_item_align_loss(self, pop_out, item_embedding):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
@@ -404,9 +405,9 @@ class FairLightGCN(GeneralRecommender):
         loss = cos_sim ** 2
         return loss.mean()
      
-    def pop_recontruct_loss(self, pop_out, pop_embedding):
+    def recontruct_loss(self, out, i_embedding):
         # 计算 pop_out 与 pop_embedding 的余弦相似度损失
-        cos_sim = F.cosine_similarity(pop_out, pop_embedding, dim=-1)  # [batch_size]
+        cos_sim = F.cosine_similarity(out, i_embedding, dim=-1)  # [batch_size]
         # 最大化余弦相似度 -> 最小化 1 - cos_sim
         loss = 1 - cos_sim
         return loss.mean()
