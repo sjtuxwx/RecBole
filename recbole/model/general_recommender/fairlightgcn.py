@@ -227,10 +227,10 @@ class FairLightGCN(GeneralRecommender):
             return (self.gama * (InfoNCE_i(item_view1_unpop, item_view2_unpop, item_view1_pop, gama=self.beta)) +
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
-    def forward_rq_item_epoch(self, rq_model, data):
+    def forward_rq_item_epoch(self, rq_model, data, pop_embedding):
         pop_out, rq_loss, indices, residual = rq_model(data)
-        rq_loss_total, rq_rec = rq_model.compute_loss(pop_out, rq_loss, xs=data)
-        return pop_out, rq_loss_total, indices, pop_out
+        rq_loss_total, rq_rec = rq_model.compute_loss(pop_out, rq_loss, xs=pop_embedding)
+        return pop_out, rq_loss_total, indices, residual
 
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
@@ -387,10 +387,10 @@ class FairLightGCN(GeneralRecommender):
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
-        user_side_info = self.process_user_side_info(interaction)
+        # user_side_info = self.process_user_side_info(interaction)
         item_popularity = interaction['popularity'][:, 1]
         pop_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        pop_out, rq_loss, indices, out = self.forward_rq_item_epoch(self.rq_model_item, pop_embedding)
+        pop_out, rq_loss, indices, out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
         # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
         # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
 
