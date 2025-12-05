@@ -73,8 +73,8 @@ class RQVAE(nn.Module):
         ipt = x
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
-        out = self.decoder(x_q)
-        pop_out = self.pop_decoder(residual)
+        out = self.decoder(residual)
+        pop_out = self.pop_decoder(x_q)
         
 
         return out, rq_loss, indices, pop_out
