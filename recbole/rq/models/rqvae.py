@@ -64,20 +64,26 @@ class RQVAE(nn.Module):
                                        activation='sigmoid'
                                        )
         self.pop_decode_layer_dims = self.encode_layer_dims[::-1] + [pop_dim]
-        self.pop_decoder = MLPLayers(layers=self.pop_decode_layer_dims,
-                                 dropout=self.dropout_prob, bn=self.bn,
-                                 activation='sigmoid'
-                                 )
+        self.pop_decoder = self.build_pop_decoder_layer(self.e_dim)
         self.W_gate = nn.Linear(self.in_dim, self.in_dim, bias=True)
     def forward(self, x, use_sk=True):
         ipt = x
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
-        pop_out = self.pop_decoder(residual)
-        
 
+        
+        pop_out = 0
         return out, rq_loss, indices, pop_out
+    def build_pop_decoder_layer(self, latent_dim: int):
+        x = latent_dim
+        lys = []
+        while x > 1:
+            lys.append(x)
+            x = x // 2
+        if lys[-1] != 1:
+            lys.append(1)
+        return MLPLayers(layers=lys, dropout=self.dropout_prob, bn=self.bn, activation='sigmoid')
 
     @torch.no_grad()
     def get_indices(self, xs, use_sk=False):

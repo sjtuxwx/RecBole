@@ -389,27 +389,18 @@ class FairLightGCN(GeneralRecommender):
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
         user_side_info = self.process_user_side_info(interaction)
         out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
-        # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
-        # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        item_popularity = interaction['popularity'][:, 1]
-        item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
-        align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
-        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2
+        gtd_pop = interaction['popularity'] # 这里其实是小数的pop
+        pop_loss = self.pop_recontruct_loss(pop_out, gtd_pop)
+        # align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * pop_loss
     
-    def pop_item_align_loss(self, pop_out, item_embedding):
+    def pop_item_align_loss(self, pop_out, gtd_pop):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
-        cos_sim = F.cosine_similarity(pop_out, item_embedding, dim=-1)  # [batch_size]
-        # 正交约束
-        loss = cos_sim ** 2
-        return loss.mean()
+        return (((pop_out - gtd_pop) ** 2) / 2).mean()
      
-    def pop_recontruct_loss(self, pop_out, pop_embedding):
+    def pop_recontruct_loss(self, pop_out, gtd_pop):
         # 计算 pop_out 与 pop_embedding 的余弦相似度损失
-        cos_sim = F.cosine_similarity(pop_out, pop_embedding, dim=-1)  # [batch_size]
-        # 最大化余弦相似度 -> 最小化 1 - cos_sim
-        loss = 1 - cos_sim
-        return loss.mean()
+        return (((pop_out - gtd_pop) ** 2) / 2).mean()
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
