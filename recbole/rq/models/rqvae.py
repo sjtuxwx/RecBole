@@ -71,10 +71,11 @@ class RQVAE(nn.Module):
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
+        cbook = self.rq.get_codebook()
+        pop_out = self.pop_decoder(cbook[0][indices[0]])
+        all_pop_out = self.pop_decoder(x_q)
 
-        
-        pop_out = 0
-        return out, rq_loss, indices, pop_out
+        return out, rq_loss, indices, pop_out, all_pop_out
     def build_pop_decoder_layer(self, latent_dim: int):
         x = latent_dim
         lys = []

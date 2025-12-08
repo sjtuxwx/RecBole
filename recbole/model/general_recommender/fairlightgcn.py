@@ -228,10 +228,10 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices, pop_out = rq_model(data)
+        out, rq_loss, indices, pop_out, all_pop_out = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss_total, indices, pop_out
+        return out, rq_loss_total, indices, pop_out, all_pop_out
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
@@ -387,12 +387,12 @@ class FairLightGCN(GeneralRecommender):
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
-        user_side_info = self.process_user_side_info(interaction)
-        out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        out, rq_loss, indices, pop_out, all_pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
         gtd_pop = interaction['popularity'] # 这里其实是小数的pop
         pop_loss = self.pop_recontruct_loss(pop_out, gtd_pop)
+        all_pop_loss = self.pop_recontruct_loss(all_pop_out, gtd_pop)
         # align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
-        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * pop_loss
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss - all_pop_loss)
     
     def pop_item_align_loss(self, pop_out, gtd_pop):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
