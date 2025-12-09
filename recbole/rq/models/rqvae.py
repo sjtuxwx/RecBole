@@ -71,11 +71,20 @@ class RQVAE(nn.Module):
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
-        cbook = self.rq.get_codebook()
-        pop_out = self.pop_decoder(cbook[0][indices[0]])
-        all_pop_out = self.pop_decoder(x_q)
+        
+        # Hierarchical Disentanglement Logic
+        cbook = self.rq.get_codebook() # [L, NumEmb, Dim]
+        
+        # Layer 1: Popularity (z_pop)
+        z_pop = F.embedding(indices[:, 0], cbook[0])
+        
+        # Layer 2+: Content (z_content)
+        z_content = torch.zeros_like(z_pop)
+        # Sum embeddings from Layer 2 to the last layer
+        for i in range(1, cbook.shape[0]):
+            z_content += F.embedding(indices[:, i], cbook[i])
 
-        return out, rq_loss, indices, pop_out, all_pop_out
+        return out, rq_loss, indices, z_pop, z_content
     def build_pop_decoder_layer(self, latent_dim: int):
         x = latent_dim
         lys = []

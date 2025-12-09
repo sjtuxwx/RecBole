@@ -31,6 +31,21 @@ from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
 from recbole.rq.models.rqvae import RQVAE
+
+class GradientReversalLayer(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+        return output, None
+
+def grad_reverse(x, alpha=1.0):
+    return GradientReversalLayer.apply(x, alpha)
+
 class FairLightGCN(GeneralRecommender):
     r"""LightGCN is a GCN-based recommender model.
 
@@ -161,6 +176,16 @@ class FairLightGCN(GeneralRecommender):
         #           sk_epsilons=[0.0, 0.0, 0.0],
         #           sk_iters=50,
         #           )
+        
+        # Pop Predictor (Positive Alignment)
+        self.pop_predictor = torch.nn.Linear(self.latent_dim, 1)
+
+        # Pop Discriminator (Negative Alignment / Adversarial)
+        self.pop_discriminator = torch.nn.Sequential(
+            torch.nn.Linear(self.latent_dim, self.latent_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(self.latent_dim, 1)
+        )
 
     def gen_extra_embedding(self):
         self.item_extra_embedding = torch.nn.ModuleDict()
@@ -228,10 +253,10 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices, pop_out, all_pop_out = rq_model(data)
+        out, rq_loss, indices, z_pop, z_content = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss_total, indices, pop_out, all_pop_out
+        return out, rq_loss_total, indices, z_pop, z_content
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
@@ -386,13 +411,25 @@ class FairLightGCN(GeneralRecommender):
 
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
+        # RQ-VAE & Hierarchical Disentanglement
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
-        out, rq_loss, indices, pop_out, all_pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
-        gtd_pop = interaction['popularity'] # 这里其实是小数的pop
-        pop_loss = self.pop_recontruct_loss(pop_out, gtd_pop)
-        all_pop_loss = self.pop_recontruct_loss(all_pop_out, gtd_pop)
-        # align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
-        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss - all_pop_loss)
+        out, rq_loss, indices, z_pop, z_content = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        
+        # Ground Truth Popularity
+        # User confirmed interaction['popularity'] is already normalized [0, 1]
+        gtd_pop = interaction['popularity'][:, 1].float().unsqueeze(-1) # [B, 1]
+
+        # Positive Alignment: z_pop should predict popularity
+        pred_pos = self.pop_predictor(z_pop)
+        pos_align_loss = F.binary_cross_entropy_with_logits(pred_pos, gtd_pop)
+
+        # Negative Alignment (Adversarial): z_content should NOT predict popularity
+        # Apply Gradient Reversal Layer to invert gradient
+        z_content_grl = grad_reverse(z_content, alpha=1.0)
+        pred_neg = self.pop_discriminator(z_content_grl)
+        neg_align_loss = F.binary_cross_entropy_with_logits(pred_neg, gtd_pop)
+
+        return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pos_align_loss + neg_align_loss)
     
     def pop_item_align_loss(self, pop_out, gtd_pop):
         # 计算 pop_out 与 item_embedding 的余弦相似度损失
