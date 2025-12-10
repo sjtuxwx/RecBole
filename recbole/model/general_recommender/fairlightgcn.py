@@ -340,7 +340,8 @@ class FairLightGCN(GeneralRecommender):
         if unique_item_id is not None and item_strong_info is not None:
             # 现在的 item_embeddings 是一个 clone 的副本，在这里修改它是安全的
             # 注意：这里计算均值时，右边的 item_embeddings[unique_item_id] 依然使用的是修改前的值（正确逻辑）
-            item_embeddings[unique_item_id] = (item_strong_info + item_embeddings[unique_item_id]) / 2
+            # item_embeddings[unique_item_id] = (item_strong_info + item_embeddings[unique_item_id]) / 2
+            item_embeddings[unique_item_id] = item_strong_info
             
         ego_embeddings = torch.cat([user_embeddings, item_embeddings], dim=0)
         return ego_embeddings
