@@ -81,7 +81,7 @@ class RQVAE(nn.Module):
         # Layer 2+: Content (z_content)
         z_content = torch.zeros_like(z_pop)
         # Sum embeddings from Layer 2 to the last layer
-        for i in range(1, cbook.shape[0]):
+        for i in range(1, len(cbook)):
             z_content += F.embedding(indices[:, i], cbook[i])
 
         return out, rq_loss, indices, z_pop, z_content

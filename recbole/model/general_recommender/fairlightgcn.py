@@ -24,6 +24,7 @@ import scipy.sparse as sp
 import torch
 import torch.nn.functional as F
 from scipy.ndimage import label
+import torch.nn as nn
 
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
@@ -145,12 +146,12 @@ class FairLightGCN(GeneralRecommender):
         # else:
         #     self.eps = 0.2
         self.gen_extra_embedding()
-        
+        self.e_dim = 16
         # 这里需要去掉 popularity 这个 extra_info
         self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1 - 1),
-                  num_emb_list=[8, 8, 8],
-                  e_dim=16,
-                  layers=[64, 32],
+                  num_emb_list=[512, 16, 16],
+                  e_dim=self.e_dim,
+                  layers=[32],
                   dropout_prob=0,
                   bn=False,
                   loss_type='mse',
@@ -178,13 +179,17 @@ class FairLightGCN(GeneralRecommender):
         #           )
         
         # Pop Predictor (Positive Alignment)
-        self.pop_predictor = torch.nn.Linear(self.latent_dim, 1)
+        self.pop_predictor = nn.Sequential(
+            nn.Linear(self.e_dim, self.e_dim),
+            nn.ReLU(),
+            nn.Linear(self.e_dim, 1)
+        )
 
         # Pop Discriminator (Negative Alignment / Adversarial)
         self.pop_discriminator = torch.nn.Sequential(
-            torch.nn.Linear(self.latent_dim, self.latent_dim),
+            torch.nn.Linear(self.e_dim, self.e_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(self.latent_dim, 1)
+            torch.nn.Linear(self.e_dim, 1)
         )
 
     def gen_extra_embedding(self):
@@ -417,18 +422,20 @@ class FairLightGCN(GeneralRecommender):
         
         # Ground Truth Popularity
         # User confirmed interaction['popularity'] is already normalized [0, 1]
-        gtd_pop = interaction['popularity'][:, 1].float().unsqueeze(-1) # [B, 1]
+        gtd_pop = interaction['popularity'].float().unsqueeze(-1) # [B, 1]
 
         # Positive Alignment: z_pop should predict popularity
         pred_pos = self.pop_predictor(z_pop)
-        pos_align_loss = F.binary_cross_entropy_with_logits(pred_pos, gtd_pop)
+        # pos_align_loss = F.binary_cross_entropy_with_logits(pred_pos, gtd_pop)
+        pos_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_pos), gtd_pop)
 
         # Negative Alignment (Adversarial): z_content should NOT predict popularity
         # Apply Gradient Reversal Layer to invert gradient
         z_content_grl = grad_reverse(z_content, alpha=1.0)
         pred_neg = self.pop_discriminator(z_content_grl)
-        neg_align_loss = F.binary_cross_entropy_with_logits(pred_neg, gtd_pop)
-
+        # neg_align_loss = F.binary_cross_entropy_with_logits(pred_neg, gtd_pop)
+        neg_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_neg), gtd_pop)
+        # neg_align_loss = 0
         return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pos_align_loss + neg_align_loss)
     
     def pop_item_align_loss(self, pop_out, gtd_pop):
