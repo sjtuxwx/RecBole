@@ -327,19 +327,25 @@ class FairLightGCN(GeneralRecommender):
         SparseL = torch.sparse.FloatTensor(indices, values, torch.Size(L.shape))
         return SparseL
 
-    def get_ego_embeddings(self):
+    def get_ego_embeddings(self, unique_item_id, item_strong_info):
         r"""Get the embedding of users and items and combine to an embedding matrix.
-
-        Returns:
-            Tensor of the embedding matrix. Shape of [n_items+n_users, embedding_dim]
         """
         user_embeddings = self.user_embedding.weight
-        item_embeddings = self.item_embedding.weight
+        
+        # [修改点] 添加 .clone()
+        # 原因：self.item_embedding.weight 是叶子节点，不能直接在上面做 in-place 修改。
+        # clone() 产生一个中间变量，修改中间变量是合法的，梯度可以正常回传。
+        item_embeddings = self.item_embedding.weight.clone()
+        
+        if unique_item_id is not None and item_strong_info is not None:
+            # 现在的 item_embeddings 是一个 clone 的副本，在这里修改它是安全的
+            # 注意：这里计算均值时，右边的 item_embeddings[unique_item_id] 依然使用的是修改前的值（正确逻辑）
+            item_embeddings[unique_item_id] = (item_strong_info + item_embeddings[unique_item_id]) / 2
+            
         ego_embeddings = torch.cat([user_embeddings, item_embeddings], dim=0)
         return ego_embeddings
-
-    def forward(self, perturbed=False):
-        all_embeddings = self.get_ego_embeddings()
+    def forward(self, unique_item_id=None, item_strong_info=None, perturbed=False):
+        all_embeddings = self.get_ego_embeddings(unique_item_id, item_strong_info)
         embeddings_list = []
 
         for layer_idx in range(self.n_layers):
@@ -395,11 +401,14 @@ class FairLightGCN(GeneralRecommender):
 
         # RQ-VAE & Hierarchical Disentanglement
         item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
+        unique_item_id, unique_idx = self.unique_with_order(interaction[self.ITEM_ID])
+        item_side_info = item_side_info[unique_idx]
         out, rq_loss, indices, z_pop, z_content = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
 
         # Ground Truth Popularity
         # User confirmed interaction['popularity'] is already normalized [0, 1]
         gtd_pop = interaction['popularity'].float().unsqueeze(-1)  # [B, 1]
+        gtd_pop = gtd_pop[unique_idx]
 
         # Positive Alignment: z_pop should predict popularity
         pred_pos = self.pop_predictor(z_pop)
@@ -415,7 +424,7 @@ class FairLightGCN(GeneralRecommender):
 
         item_strong_info = self.content_info_decoder(z_content)
 
-        user_all_embeddings, item_all_embeddings = self.forward()
+        user_all_embeddings, item_all_embeddings = self.forward(unique_item_id, item_strong_info)
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
@@ -471,6 +480,57 @@ class FairLightGCN(GeneralRecommender):
         i_embeddings = item_all_embeddings[item]
         scores = torch.mul(u_embeddings, i_embeddings).sum(dim=1)
         return scores
+
+    def unique_with_order(self, x):
+        """
+        输入: x (1D tensor)
+        输出: 
+            unique_values: 保持原顺序的唯一值
+            first_indices: 这些值第一次出现的索引
+        """
+        # 1. 获取唯一值(自动排序)和逆向索引
+        # sorted=True 是默认的，返回的 sorted_uniques 是按数值大小排序的 (如 [1, 2, 3])
+        # inverse_indices 是原始 x 中的元素对应 sorted_uniques 的下标
+        sorted_uniques, inverse_indices = torch.unique(x, sorted=True, return_inverse=True)
+        
+        # 2. 准备一个容器来存储每个唯一值第一次出现的索引
+        # 初始化为由 x 的长度填充的一个大数（为了后面取最小值做准备）
+        # 长度等于唯一值的数量
+        first_indices_placeholder = torch.zeros(
+            sorted_uniques.size(0), 
+            dtype=torch.long, 
+            device=x.device
+        ).fill_(x.size(0))
+        
+        # 3. 生成原始位置的索引序列 [0, 1, 2, ...]
+        perm = torch.arange(x.size(0), dtype=torch.long, device=x.device)
+        
+        # 4. 使用 scatter_reduce 找到每个唯一值对应的最小索引
+        # 逻辑解释：
+        # inverse_indices 告诉我们 x 的第 i 个元素属于哪个“唯一值类别”。
+        # 我们把 perm (即原始索引) 按照 inverse_indices 撒(scatter)到 placeholder 里。
+        # reduce="amin" 表示：如果同一个位置被撒入多个索引，保留最小的那个（即第一次出现的那个）。
+        # 注意：scatter_reduce_ 需要 PyTorch 1.12+ 版本
+        first_indices_placeholder.scatter_reduce_(
+            0, 
+            inverse_indices, 
+            perm, 
+            reduce="amin", 
+            include_self=False
+        )
+        
+        # 此时，first_indices_placeholder 里存的是 sorted_uniques 对应的第一次出现索引。
+        # 但因为 sorted_uniques 是按值排序的，所以这里的索引顺序是乱的（不是按出现顺序）。
+        
+        # 5. 对索引进行排序，恢复“按出现顺序”排列
+        # sort_indices 是排序后的索引，indices_order 是原本的排序位置
+        sorted_first_indices, sort_order = first_indices_placeholder.sort()
+        
+        # 6. 使用排序后的索引从原始 x 中提取值，或者重新排列 sorted_uniques
+        # 推荐直接用 sorted_first_indices 从 x 取值，这样最直观
+        final_unique_values = x[sorted_first_indices]
+        
+        return final_unique_values, sorted_first_indices
 
     def full_sort_predict(self, interaction):
         user = interaction[self.USER_ID]
