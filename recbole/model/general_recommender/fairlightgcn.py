@@ -186,11 +186,21 @@ class FairLightGCN(GeneralRecommender):
         )
 
         # Pop Discriminator (Negative Alignment / Adversarial)
-        self.pop_discriminator = torch.nn.Sequential(
-            torch.nn.Linear(self.e_dim, self.e_dim),
+        self.content_decoder = torch.nn.Sequential(
+            torch.nn.Linear(self.e_dim, 2*self.e_dim),
             torch.nn.ReLU(),
+            torch.nn.Linear(2*self.e_dim, self.e_dim),
+            torch.nn.ReLU()
+        )
+        self.content_pop_decoder = torch.nn.Sequential(
+            self.content_decoder,
             torch.nn.Linear(self.e_dim, 1)
         )
+        self.content_info_decoder = torch.nn.Sequential(
+            self.content_decoder,
+            torch.nn.Linear(self.e_dim, self.latent_dim)
+        )
+
 
     def gen_extra_embedding(self):
         self.item_extra_embedding = torch.nn.ModuleDict()
@@ -383,6 +393,28 @@ class FairLightGCN(GeneralRecommender):
         pos_item = interaction[self.ITEM_ID]
         neg_item = interaction[self.NEG_ITEM_ID]
 
+        # RQ-VAE & Hierarchical Disentanglement
+        item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
+        out, rq_loss, indices, z_pop, z_content = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+
+        # Ground Truth Popularity
+        # User confirmed interaction['popularity'] is already normalized [0, 1]
+        gtd_pop = interaction['popularity'].float().unsqueeze(-1)  # [B, 1]
+
+        # Positive Alignment: z_pop should predict popularity
+        pred_pos = self.pop_predictor(z_pop)
+        # pos_align_loss = F.binary_cross_entropy_with_logits(pred_pos, gtd_pop)
+        pos_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_pos), gtd_pop)
+
+        # Negative Alignment (Adversarial): z_content should NOT predict popularity
+        # Apply Gradient Reversal Layer to invert gradient
+        z_content_grl = grad_reverse(z_content, alpha=1.0)
+        pred_neg = self.content_pop_decoder(z_content_grl)
+        # neg_align_loss = F.binary_cross_entropy_with_logits(pred_neg, gtd_pop)
+        neg_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_neg), gtd_pop)
+
+        item_strong_info = self.content_info_decoder(z_content)
+
         user_all_embeddings, item_all_embeddings = self.forward()
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
@@ -394,6 +426,7 @@ class FairLightGCN(GeneralRecommender):
         
 
         cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
+
 
 
 
@@ -416,25 +449,7 @@ class FairLightGCN(GeneralRecommender):
 
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
-        # RQ-VAE & Hierarchical Disentanglement
-        item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
-        out, rq_loss, indices, z_pop, z_content = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
-        
-        # Ground Truth Popularity
-        # User confirmed interaction['popularity'] is already normalized [0, 1]
-        gtd_pop = interaction['popularity'].float().unsqueeze(-1) # [B, 1]
 
-        # Positive Alignment: z_pop should predict popularity
-        pred_pos = self.pop_predictor(z_pop)
-        # pos_align_loss = F.binary_cross_entropy_with_logits(pred_pos, gtd_pop)
-        pos_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_pos), gtd_pop)
-
-        # Negative Alignment (Adversarial): z_content should NOT predict popularity
-        # Apply Gradient Reversal Layer to invert gradient
-        z_content_grl = grad_reverse(z_content, alpha=1.0)
-        pred_neg = self.pop_discriminator(z_content_grl)
-        # neg_align_loss = F.binary_cross_entropy_with_logits(pred_neg, gtd_pop)
-        neg_align_loss = self.pop_item_align_loss(torch.sigmoid(pred_neg), gtd_pop)
         # neg_align_loss = 0
         return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pos_align_loss + neg_align_loss)
     
