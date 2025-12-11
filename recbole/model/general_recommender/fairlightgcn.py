@@ -132,7 +132,7 @@ class FairLightGCN(GeneralRecommender):
         # else:
         #     self.eps = 0.2
         self.gen_extra_embedding()
-        self.item_strong_dim = self.latent_dim * (len(self.eInfo['item']))  - 1
+        self.item_strong_dim = self.latent_dim * ((len(self.eInfo['item']))  - 1)
         self.item_strong_info = nn.Parameter()
 
         
@@ -349,7 +349,7 @@ class FairLightGCN(GeneralRecommender):
             # ], dim=1)  # 假设是拼接
 
             # 如果你是相加融合：
-            item_all_embeddings = self.item_embedding.weight + self.side_info_cache
+            item_all_embeddings = (1-0.1)*self.item_embedding.weight + 0.1*self.side_info_cache
 
         # 3. 构造图卷积的初始 Ego Embedding
         # 注意维度：User 也是 latent_dim，但 Item 现在可能是 2*latent_dim (如果concat)
@@ -475,7 +475,7 @@ class FairLightGCN(GeneralRecommender):
         #     self.item_embedding.weight,  # ID Embedding (始终可训练)
         #     global_side_emb  # 混合 Side Embedding
         # ], dim=1)
-        global_input_matrix = self.item_embedding_weight + global_side_emb
+        global_input_matrix = (1-0.1)*self.item_embedding.weight + 0.1*global_side_emb
         user_all_embeddings, item_all_embeddings = self.forward(custom_item_matrix=global_input_matrix)
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
@@ -486,7 +486,7 @@ class FairLightGCN(GeneralRecommender):
         context.itempop = context.itempop.to(self.device)
         
 
-        cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
+        # cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
 
 
 
@@ -507,7 +507,7 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
+        loss = mf_loss + self.reg_weight * reg_loss + 0
 
         # item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
         # user_side_info = self.process_user_side_info(interaction)
