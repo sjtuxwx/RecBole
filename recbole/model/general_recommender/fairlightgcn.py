@@ -18,15 +18,17 @@ Reference:
 Reference code:
     https://github.com/kuandeng/LightGCN
 """
+import copy
 
 import numpy as np
 import scipy.sparse as sp
 import torch
 import torch.nn.functional as F
 from scipy.ndimage import label
-
+import torch.nn as nn
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
+from recbole.model.layers import MLPLayers
 from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
@@ -130,23 +132,47 @@ class FairLightGCN(GeneralRecommender):
         # else:
         #     self.eps = 0.2
         self.gen_extra_embedding()
+        self.item_strong_dim = self.latent_dim * (len(self.eInfo['item']))  - 1
+        self.item_strong_info = nn.Parameter()
+
         
         # 这里需要去掉 popularity 这个 extra_info
-        self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1 - 1),
-                  num_emb_list=[8, 8, 8],
-                  e_dim=16,
-                  layers=[64, 32],
-                  dropout_prob=0,
-                  bn=False,
-                  loss_type='mse',
-                  quant_loss_weight=1,
-                  beta=0.25,
-                  kmeans_init=True,
-                  kmeans_iters=100,
-                  sk_epsilons=[0.0, 0.0, 0.0],
-                  sk_iters=50,
-                  pop_dim=self.latent_dim
-                  )
+        # self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1 - 1),
+        #           num_emb_list=[8, 8, 8],
+        #           e_dim=16,
+        #           layers=[64, 32],
+        #           dropout_prob=0,
+        #           bn=False,
+        #           loss_type='mse',
+        #           quant_loss_weight=1,
+        #           beta=0.25,
+        #           kmeans_init=True,
+        #           kmeans_iters=100,
+        #           sk_epsilons=[0.0, 0.0, 0.0],
+        #           sk_iters=50,
+        #           pop_dim=self.latent_dim
+        #           )
+        self.fusion_side_info = MLPLayers(
+            [self.item_strong_dim, self.latent_dim],
+            dropout=0.2, activation="sigmoid", last_activation=False
+        )
+        # ============================================================
+        # 2. 定义 Target MLP (师父 - 用于生成稳定缓存)
+        # ============================================================
+        # 深拷贝 Online MLP，保证结构初始参数一致
+        self.fusion_side_info_target = copy.deepcopy(self.fusion_side_info)
+
+        # 核心：完全冻结 Target MLP，不接受梯度，只接受动量更新
+        for param in self.fusion_side_info_target.parameters():
+            param.requires_grad = False
+
+        self.register_buffer(
+            'side_info_cache',
+            torch.zeros(self.n_items, self.latent_dim)
+        )
+        # 动量系数 (建议 0.99 或 0.999)
+        self.momentum = config['momentum'] if 'momentum' in config else 0.995
+
         # self.rq_model_user = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['user']) + 1),
         #           num_emb_list=[8, 8, 8],
         #           e_dim=16,
@@ -161,6 +187,14 @@ class FairLightGCN(GeneralRecommender):
         #           sk_epsilons=[0.0, 0.0, 0.0],
         #           sk_iters=50,
         #           )
+
+    @torch.no_grad()
+    def _update_target_network(self):
+        """
+        Momentum update: theta_target = m * theta_target + (1 - m) * theta_online
+        """
+        for param_o, param_t in zip(self.fusion_side_info.parameters(), self.fusion_side_info_target.parameters()):
+            param_t.data = param_t.data * self.momentum + param_o.data * (1.0 - self.momentum)
 
     def gen_extra_embedding(self):
         self.item_extra_embedding = torch.nn.ModuleDict()
@@ -287,7 +321,7 @@ class FairLightGCN(GeneralRecommender):
         SparseL = torch.sparse.FloatTensor(indices, values, torch.Size(L.shape))
         return SparseL
 
-    def get_ego_embeddings(self):
+    def get_ego_embeddings(self, use_strong_info: bool = True):
         r"""Get the embedding of users and items and combine to an embedding matrix.
 
         Returns:
@@ -298,8 +332,31 @@ class FairLightGCN(GeneralRecommender):
         ego_embeddings = torch.cat([user_embeddings, item_embeddings], dim=0)
         return ego_embeddings
 
-    def forward(self, perturbed=False):
-        all_embeddings = self.get_ego_embeddings()
+    def forward(self, custom_item_matrix=None, perturbed=False):
+        # 1. User 还是原来的 User ID Embedding
+        user_all_embeddings = self.user_embedding.weight
+
+        # 2. Item 矩阵逻辑
+        if custom_item_matrix is not None:
+            # 训练时：使用我们拼装好的“弗兰肯斯坦”矩阵
+            item_all_embeddings = custom_item_matrix
+        else:
+            # 推理/验证时：使用 ID Emb + 缓存的 Side Emb
+            # 或者是 ID Emb + Target MLP 算出来的 Side Emb
+            # item_all_embeddings = torch.cat([
+            #     self.item_embedding.weight,
+            #     self.side_info_cache
+            # ], dim=1)  # 假设是拼接
+
+            # 如果你是相加融合：
+            item_all_embeddings = self.item_embedding.weight + self.side_info_cache
+
+        # 3. 构造图卷积的初始 Ego Embedding
+        # 注意维度：User 也是 latent_dim，但 Item 现在可能是 2*latent_dim (如果concat)
+        # 如果维度不匹配，你可能需要一个线性层把 Item 降维，或者 User 也做对应拼接
+        # 这里假设维度已经对齐，或者 Item ID Emb 和 Side Emb 是相加关系
+        all_embeddings = torch.cat([user_all_embeddings, item_all_embeddings], dim=0)
+
         embeddings_list = []
 
         for layer_idx in range(self.n_layers):
@@ -309,15 +366,36 @@ class FairLightGCN(GeneralRecommender):
                 all_embeddings = all_embeddings + torch.sign(all_embeddings) * F.normalize(random_noise,
                                                                                            dim=1) * self.eps
             embeddings_list.append(all_embeddings)
-            
+
         lightgcn_all_embeddings = torch.stack(embeddings_list, dim=1)
         lightgcn_all_embeddings = torch.mean(lightgcn_all_embeddings, dim=1)
 
         user_all_embeddings, item_all_embeddings = torch.split(
             lightgcn_all_embeddings, [self.n_users, self.n_items]
         )
-        
+
         return user_all_embeddings, item_all_embeddings
+
+    # def forward(self, perturbed=False):
+    #     all_embeddings = self.get_ego_embeddings()
+    #     embeddings_list = []
+    #
+    #     for layer_idx in range(self.n_layers):
+    #         all_embeddings = torch.sparse.mm(self.norm_adj_matrix, all_embeddings)
+    #         if perturbed:
+    #             random_noise = torch.rand_like(all_embeddings).to(self.device)
+    #             all_embeddings = all_embeddings + torch.sign(all_embeddings) * F.normalize(random_noise,
+    #                                                                                        dim=1) * self.eps
+    #         embeddings_list.append(all_embeddings)
+    #
+    #     lightgcn_all_embeddings = torch.stack(embeddings_list, dim=1)
+    #     lightgcn_all_embeddings = torch.mean(lightgcn_all_embeddings, dim=1)
+    #
+    #     user_all_embeddings, item_all_embeddings = torch.split(
+    #         lightgcn_all_embeddings, [self.n_users, self.n_items]
+    #     )
+    #
+    #     return user_all_embeddings, item_all_embeddings
 
     def fusion_cl_loss(self, user_loss, item_loss):
         # print(user_loss, item_loss)
@@ -353,7 +431,52 @@ class FairLightGCN(GeneralRecommender):
         pos_item = interaction[self.ITEM_ID]
         neg_item = interaction[self.NEG_ITEM_ID]
 
-        user_all_embeddings, item_all_embeddings = self.forward()
+        # --------------------------------------------------------
+        # Step 1: 准备当前 Batch Item 的 MLP 输入
+        # --------------------------------------------------------
+        # 获取 pos_item 对应的原始 Side Info Embedding 拼接结果
+        # input shape: [batch_size, 3 * dim]
+        batch_mlp_input = self.get_batch_mlp_input(interaction, pos_item)
+
+        # --------------------------------------------------------
+        # Step 2: Online MLP 计算 (热计算 -> 算梯度)
+        # --------------------------------------------------------
+        # 这部分带有梯度，反向传播会更新 MLP 和 Side Info 的 Embedding 表
+        batch_online_emb = self.fusion_side_info(batch_mlp_input)
+
+        # --------------------------------------------------------
+        # Step 3: Target MLP 计算 & 刷新缓存 (冷计算 -> 存背景)
+        # --------------------------------------------------------
+        with torch.no_grad():  # 绝对不要梯度
+            # a. 动量更新参数
+            self._update_target_network()
+
+            # b. 用 Target 网络算一遍
+            batch_target_emb = self.fusion_side_info_target(batch_mlp_input)
+
+            # c. 写入全局缓存
+            # 注意：这里我们只更新 pos_item 对应的行
+            # .detach() 双重保险，确保不带计算图
+            self.side_info_cache[pos_item] = batch_target_emb.detach()
+
+        # --------------------------------------------------------
+        # Step 4: 组装 "弗兰肯斯坦" 矩阵
+        # --------------------------------------------------------
+        # a. 复制一份缓存 (全是 Target MLP 的结果)
+        global_side_emb = self.side_info_cache.clone()
+
+        # b. 把当前 Batch 的位置挖掉，填入 Online MLP 的结果 (带梯度!)
+        # 这是梯度回传的唯一通道
+        global_side_emb.index_put_((pos_item,), batch_online_emb)
+
+        # c. 与 ID Embedding 结合 (Concat 或 Add)
+        # 假设我们使用 Concat 方式融合
+        # global_input_matrix = torch.cat([
+        #     self.item_embedding.weight,  # ID Embedding (始终可训练)
+        #     global_side_emb  # 混合 Side Embedding
+        # ], dim=1)
+        global_input_matrix = self.item_embedding_weight + global_side_emb
+        user_all_embeddings, item_all_embeddings = self.forward(custom_item_matrix=global_input_matrix)
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
@@ -386,15 +509,15 @@ class FairLightGCN(GeneralRecommender):
 
         loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
-        item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
-        user_side_info = self.process_user_side_info(interaction)
-        out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
-        # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
-        # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
-        item_popularity = interaction['popularity'][:, 1]
-        item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
-        pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
-        align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
+        # item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
+        # user_side_info = self.process_user_side_info(interaction)
+        # out, rq_loss, indices, pop_out = self.forward_rq_item_epoch(self.rq_model_item, item_side_info)
+        # # out, rq_loss_user, indices = self.forward_rq_user_epoch(self.rq_model_user, user_side_info)
+        # # return loss + 0.5 * (rq_loss + rq_loss_user) / 2
+        # item_popularity = interaction['popularity'][:, 1]
+        # item_embedding = self.extra_embedding_for_specified('popularity', item_popularity)
+        # pop_loss = self.pop_recontruct_loss(pop_out, item_embedding)
+        # align_loss = self.pop_item_align_loss(pop_out, item_all_embeddings[pos_item])
         return loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * (pop_loss + align_loss) / 2
     
     def pop_item_align_loss(self, pop_out, item_embedding):
@@ -433,3 +556,27 @@ class FairLightGCN(GeneralRecommender):
         scores = torch.matmul(u_embeddings, self.restore_item_e.transpose(0, 1))
 
         return scores.view(-1)
+
+    def get_batch_mlp_input(self, interaction, item_indices):
+        """
+        获取指定 Item 的 3个 Side Info Embedding 并拼接，作为 MLP 的输入
+        """
+        res = []
+        # 遍历 3 个 Side Info (例如 category, color, brand)
+        for extra_info in self.eInfo['item']:
+            if extra_info == 'popularity':
+                continue
+            # 从 interaction 里拿到对应的特征 ID
+            # 注意：这里需要确保 interaction 能通过索引拿到 item_indices 对应的特征
+            # 如果 interaction 是整个 batch 的，你需要先 slice 出来
+
+            # 这里为了通用性，假设 dataset.get_item_feature 存在
+            # 或者如果 interaction 包含了当前 batch 的列，直接取
+            feature_val = interaction[extra_info]
+
+            # 如果 feature_val 已经是 batch 后的数据，直接用
+            emb = self.extra_embedding_forward(extra_info, feature_val)
+            res.append(emb)
+
+        # 拼接: [batch_size, 3 * emb_dim]
+        return torch.concat(res, dim=-1)
