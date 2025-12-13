@@ -156,6 +156,12 @@ class FairLightGCN(GeneralRecommender):
             [self.item_strong_dim, self.latent_dim],
             dropout=0.2, activation="sigmoid", last_activation=False
         )
+        self.side_info_ln = nn.LayerNorm(self.latent_dim)
+        self.fusion_side_info = nn.Sequential(
+            self.fusion_side_info,
+            self.side_info_ln
+        )
+        
         # ============================================================
         # 2. 定义 Target MLP (师父 - 用于生成稳定缓存)
         # ============================================================
@@ -165,6 +171,8 @@ class FairLightGCN(GeneralRecommender):
         # 核心：完全冻结 Target MLP，不接受梯度，只接受动量更新
         for param in self.fusion_side_info_target.parameters():
             param.requires_grad = False
+        
+        self.alpha = 0.10
 
         self.register_buffer(
             'side_info_cache',
@@ -335,21 +343,24 @@ class FairLightGCN(GeneralRecommender):
     def forward(self, custom_item_matrix=None, perturbed=False):
         # 1. User 还是原来的 User ID Embedding
         user_all_embeddings = self.user_embedding.weight
-
-        # 2. Item 矩阵逻辑
-        if custom_item_matrix is not None:
-            # 训练时：使用我们拼装好的“弗兰肯斯坦”矩阵
-            item_all_embeddings = custom_item_matrix
+        if self.alpha == 0:
+            item_all_embeddings = self.item_embedding.weight
         else:
-            # 推理/验证时：使用 ID Emb + 缓存的 Side Emb
-            # 或者是 ID Emb + Target MLP 算出来的 Side Emb
-            # item_all_embeddings = torch.cat([
-            #     self.item_embedding.weight,
-            #     self.side_info_cache
-            # ], dim=1)  # 假设是拼接
 
-            # 如果你是相加融合：
-            item_all_embeddings = (1-0.1)*self.item_embedding.weight + 0.1*self.side_info_cache
+            # 2. Item 矩阵逻辑
+            if custom_item_matrix is not None:
+                # 训练时：使用我们拼装好的“弗兰肯斯坦”矩阵
+                item_all_embeddings = custom_item_matrix
+            else:
+                # 推理/验证时：使用 ID Emb + 缓存的 Side Emb
+                # 或者是 ID Emb + Target MLP 算出来的 Side Emb
+                # item_all_embeddings = torch.cat([
+                #     self.item_embedding.weight,
+                #     self.side_info_cache
+                # ], dim=1)  # 假设是拼接
+
+                # 如果你是相加融合：
+                item_all_embeddings = (1-self.alpha)*self.item_embedding.weight + self.alpha*self.side_info_cache
 
         # 3. 构造图卷积的初始 Ego Embedding
         # 注意维度：User 也是 latent_dim，但 Item 现在可能是 2*latent_dim (如果concat)
@@ -407,6 +418,8 @@ class FairLightGCN(GeneralRecommender):
         return self.cl_rate * fusion_loss
 
     def cl_loss(self, user, item, itempop, cl_rate=0.2, gama=0.2, beta=0.2):
+        if self.cl_rate == 0.0:
+            return 0.0
         G1, G2 = split_by_pop(item, itempop)
         user_view1, item_view1 = self.forward(perturbed=True)
         # item_view1 = item_view1[item]
@@ -475,7 +488,7 @@ class FairLightGCN(GeneralRecommender):
         #     self.item_embedding.weight,  # ID Embedding (始终可训练)
         #     global_side_emb  # 混合 Side Embedding
         # ], dim=1)
-        global_input_matrix = (1-0.1)*self.item_embedding.weight + 0.1*global_side_emb
+        global_input_matrix = (1-self.alpha)*self.item_embedding.weight + self.alpha*global_side_emb
         user_all_embeddings, item_all_embeddings = self.forward(custom_item_matrix=global_input_matrix)
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
@@ -486,7 +499,7 @@ class FairLightGCN(GeneralRecommender):
         context.itempop = context.itempop.to(self.device)
         
 
-        # cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
+        cl_loss = self.cl_loss(user, pos_item, context.itempop, cl_rate=self.cl_rate, gama=self.gama, beta=self.beta)
 
 
 
@@ -507,7 +520,7 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + 0
+        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
 
         # item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
         # user_side_info = self.process_user_side_info(interaction)
