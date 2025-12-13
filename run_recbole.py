@@ -117,6 +117,13 @@ if __name__ == "__main__":
         type=str,
         default="train"
     )
+
+    parser.add_argument(
+        "--resume_checkpoint",
+        type=str,
+        default=None,
+        help="checkpoint file to resume training"
+    )
     
     parser.add_argument(
         "--pop_loss_rate",

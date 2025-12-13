@@ -517,6 +517,7 @@ class FairLightGCN(GeneralRecommender):
             u_ego_embeddings,
             pos_ego_embeddings,
             neg_ego_embeddings,
+            # global_side_emb[pos_item],
             require_pow=self.require_pow,
         )
 
