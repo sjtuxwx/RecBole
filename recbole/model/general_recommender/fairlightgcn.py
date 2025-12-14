@@ -181,6 +181,13 @@ class FairLightGCN(GeneralRecommender):
         # 动量系数 (建议 0.99 或 0.999)
         self.momentum = config['momentum'] if 'momentum' in config else 0.995
 
+        self.fusion_gate_layer = nn.Sequential(
+            nn.Linear(self.latent_dim, self.latent_dim),  # 输入维度减半
+            nn.Tanh(),
+            nn.Linear(self.latent_dim, 1),
+            nn.Sigmoid()
+        )
+
         # self.rq_model_user = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['user']) + 1),
         #           num_emb_list=[8, 8, 8],
         #           e_dim=16,
@@ -300,6 +307,24 @@ class FairLightGCN(GeneralRecommender):
         res.append(self.user_embedding(interaction[self.USER_ID]))
         return torch.concat(res, dim=-1)
 
+    def get_fused_embeddings(self, id_embeddings, side_embeddings):
+        """
+        利用门控机制融合 ID 和 Side Info
+        """
+        # ============================================================
+        # 【修改点】: 只使用 ID Embedding 来计算门控系数
+        # 逻辑：根据 Item 自身的特性（如是否热门、是否训练充分）来决定融合比例
+        # ============================================================
+        gate_input = id_embeddings
+
+        # 计算门控系数 g: [N, 1]
+        gate = self.fusion_gate_layer(gate_input)
+
+        # 加权融合 (保持不变)
+        # E_final = (1 - g) * ID + g * Side
+        fused_embeddings = (1 - gate) * id_embeddings + gate * side_embeddings
+
+        return fused_embeddings
 
 
     def get_norm_adj_mat(self):
@@ -360,7 +385,8 @@ class FairLightGCN(GeneralRecommender):
                 # ], dim=1)  # 假设是拼接
 
                 # 如果你是相加融合：
-                item_all_embeddings = (1-self.alpha)*self.item_embedding.weight + self.alpha*self.side_info_cache
+                item_all_embeddings = self.fusion_gate_layer(self.item_embedding.weight, self.side_info_cache)
+                # item_all_embeddings = (1-self.alpha)*self.item_embedding.weight + self.alpha*self.side_info_cache
 
         # 3. 构造图卷积的初始 Ego Embedding
         # 注意维度：User 也是 latent_dim，但 Item 现在可能是 2*latent_dim (如果concat)
@@ -488,7 +514,7 @@ class FairLightGCN(GeneralRecommender):
         #     self.item_embedding.weight,  # ID Embedding (始终可训练)
         #     global_side_emb  # 混合 Side Embedding
         # ], dim=1)
-        global_input_matrix = (1-self.alpha)*self.item_embedding.weight + self.alpha*global_side_emb
+        global_input_matrix = self.get_fused_embeddings(self.item_embedding.weight, global_side_emb)
         user_all_embeddings, item_all_embeddings = self.forward(custom_item_matrix=global_input_matrix)
         u_embeddings = user_all_embeddings[user]
         pos_embeddings = item_all_embeddings[pos_item]
