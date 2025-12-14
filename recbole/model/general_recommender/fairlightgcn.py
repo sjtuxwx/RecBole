@@ -26,6 +26,8 @@ import torch
 import torch.nn.functional as F
 from scipy.ndimage import label
 import torch.nn as nn
+from torch.nn.functional import embedding
+
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.layers import MLPLayers
@@ -33,6 +35,21 @@ from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
 from recbole.rq.models.rqvae import RQVAE
+
+class GradientReversalLayer(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+        return output, None
+
+def grad_reverse(x, alpha=1.0):
+    return GradientReversalLayer.apply(x, alpha)
+
 class FairLightGCN(GeneralRecommender):
     r"""LightGCN is a GCN-based recommender model.
 
@@ -137,26 +154,26 @@ class FairLightGCN(GeneralRecommender):
 
         
         # 这里需要去掉 popularity 这个 extra_info
-        # self.rq_model_item = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['item']) + 1 - 1),
-        #           num_emb_list=[8, 8, 8],
-        #           e_dim=16,
-        #           layers=[64, 32],
-        #           dropout_prob=0,
-        #           bn=False,
-        #           loss_type='mse',
-        #           quant_loss_weight=1,
-        #           beta=0.25,
-        #           kmeans_init=True,
-        #           kmeans_iters=100,
-        #           sk_epsilons=[0.0, 0.0, 0.0],
-        #           sk_iters=50,
-        #           pop_dim=self.latent_dim
-        #           )
+        self.rq_model_item = RQVAE(in_dim=self.latent_dim,
+                  num_emb_list=[32, 32, 32],
+                  e_dim=16,
+                  layers=[64, 32, 16],
+                  dropout_prob=0.1,
+                  bn=False,
+                  loss_type='mse',
+                  quant_loss_weight=1,
+                  beta=0.25,
+                  kmeans_init=True,
+                  kmeans_iters=100,
+                  sk_epsilons=[0.0, 0.0, 0.0],
+                  sk_iters=50,
+                  pop_dim=self.latent_dim
+        )
         self.fusion_side_info = MLPLayers(
             [self.item_strong_dim, self.latent_dim],
             dropout=0.2, activation="sigmoid", last_activation=False
         )
-        self.side_info_ln = nn.LayerNorm(self.latent_dim)
+        self.side_info_ln = nn.LayerNorm(self.latent_dimS)
         self.fusion_side_info = nn.Sequential(
             self.fusion_side_info,
             self.side_info_ln
@@ -185,6 +202,13 @@ class FairLightGCN(GeneralRecommender):
             nn.Linear(self.latent_dim, self.latent_dim),  # 输入维度减半
             nn.Tanh(),
             nn.Linear(self.latent_dim, 1),
+            nn.Sigmoid()
+        )
+
+        self.pop_predictor = nn.Sequential(
+            nn.Linear(self.latent_dim, self.latent_dim // 2),
+            nn.Tanh(),
+            nn.Linear(self.latent_dim // 2, 1),
             nn.Sigmoid()
         )
 
@@ -277,10 +301,10 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices, pop_out = rq_model(data)
+        out, rq_loss, indices, residual = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss_total, indices, pop_out
+        return out, rq_loss_total, indices, residual
     def forward_rq_user_epoch(self, rq_model, data):
         out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
@@ -520,6 +544,14 @@ class FairLightGCN(GeneralRecommender):
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
 
+        batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0)
+        out, rq_loss, indices, residual = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
+        codebook = self.rq_model_item.rq.get_codebook()
+        pop_book = codebook[0][indices[0]]
+        unpop_book = codebook[1][indices[1]] + codebook[2][indices[2]]
+
+
+
 
         context = interaction.context
         context.itempop = context.itempop.to(self.device)
@@ -621,3 +653,5 @@ class FairLightGCN(GeneralRecommender):
 
         # 拼接: [batch_size, 3 * emb_dim]
         return torch.concat(res, dim=-1)
+
+    def

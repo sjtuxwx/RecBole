@@ -74,10 +74,10 @@ class RQVAE(nn.Module):
         x = self.encoder(x)
         x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
         out = self.decoder(x_q)
-        pop_out = self.pop_decoder(residual)
+        # pop_out = self.pop_decoder(residual)
         
 
-        return out, rq_loss, indices, pop_out
+        return out, rq_loss, indices, residual
 
     @torch.no_grad()
     def get_indices(self, xs, use_sk=False):

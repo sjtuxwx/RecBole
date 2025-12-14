@@ -34,7 +34,7 @@ class ResidualVectorQuantizer(nn.Module):
         for quantizer in self.vq_layers:
             codebook = quantizer.get_codebook()
             all_codebook.append(codebook)
-        return torch.stack(all_codebook)
+        return all_codebook
 
     def forward(self, x, use_sk=True):
         all_losses = []
