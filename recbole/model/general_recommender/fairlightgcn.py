@@ -155,7 +155,7 @@ class FairLightGCN(GeneralRecommender):
         
         # 这里需要去掉 popularity 这个 extra_info
         self.rq_model_item = RQVAE(in_dim=self.latent_dim,
-                  num_emb_list=[32, 32, 32],
+                  num_emb_list=[256, 32, 32],
                   e_dim=16,
                   layers=[64, 32, 16],
                   dropout_prob=0.1,
@@ -173,7 +173,7 @@ class FairLightGCN(GeneralRecommender):
             [self.item_strong_dim, self.latent_dim],
             dropout=0.2, activation="sigmoid", last_activation=False
         )
-        self.side_info_ln = nn.LayerNorm(self.latent_dimS)
+        self.side_info_ln = nn.LayerNorm(self.latent_dim)
         self.fusion_side_info = nn.Sequential(
             self.fusion_side_info,
             self.side_info_ln
@@ -206,10 +206,10 @@ class FairLightGCN(GeneralRecommender):
         )
 
         self.pop_predictor = nn.Sequential(
-            nn.Linear(self.latent_dim, self.latent_dim // 2),
+            nn.Linear(16, 16 // 2),
             nn.Tanh(),
-            nn.Linear(self.latent_dim // 2, 1),
-            nn.Sigmoid()
+            nn.Linear(16 // 2, 1),
+            # nn.Sigmoid()
         )
 
         # self.rq_model_user = RQVAE(in_dim=self.latent_dim * (len(self.eInfo['user']) + 1),
@@ -342,7 +342,7 @@ class FairLightGCN(GeneralRecommender):
         gate_input = id_embeddings
 
         # 计算门控系数 g: [N, 1]
-        gate = self.fusion_gate_layer(gate_input)
+        gate = self.fusion_gate_layer(gate_input).detach()
 
         # 加权融合 (保持不变)
         # E_final = (1 - g) * ID + g * Side
@@ -547,8 +547,19 @@ class FairLightGCN(GeneralRecommender):
         batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0)
         out, rq_loss, indices, residual = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
         codebook = self.rq_model_item.rq.get_codebook()
-        pop_book = codebook[0][indices[0]]
-        unpop_book = codebook[1][indices[1]] + codebook[2][indices[2]]
+        pop_info = torch.cat([interaction['popularity'], interaction['neg_popularity']])
+        pop_book = codebook[0][indices[:, 0]]
+        content_book = codebook[1][indices[:, 1]] + codebook[2][indices[:, 2]]
+        pop_res = self.pop_predictor(pop_book.detach())
+        content_book_ref = grad_reverse(content_book.detach())
+        content_res = self.pop_predictor(content_book_ref)
+        pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
+        content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
+        
+        pop_total_loss = pop_res_loss + content_res_loss
+        
+        content_item_embedding = self.rq_model_item.decoder(content_book)
+        content_pos_item_embedding, content_neg_item_embedding = torch.split(content_item_embedding, pos_item.shape[0])
 
 
 
@@ -564,7 +575,9 @@ class FairLightGCN(GeneralRecommender):
         # calculate BPR Loss
         pos_scores = torch.mul(u_embeddings, pos_embeddings).sum(dim=1)
         neg_scores = torch.mul(u_embeddings, neg_embeddings).sum(dim=1)
-        mf_loss = self.mf_loss(pos_scores, neg_scores)
+        pos_content_scores = torch.mul(u_embeddings, content_pos_item_embedding).sum(dim=1)
+        neg_content_scores = torch.mul(u_embeddings, content_neg_item_embedding).sum(dim=1)
+        mf_loss = self.mf_loss(pos_scores, neg_scores) + 15 * self.mf_loss(pos_content_scores, neg_content_scores)
 
         # calculate regularization Loss
         u_ego_embeddings = self.user_embedding(user)
@@ -579,7 +592,7 @@ class FairLightGCN(GeneralRecommender):
             require_pow=self.require_pow,
         )
 
-        loss = mf_loss + self.reg_weight * reg_loss + cl_loss
+        loss = mf_loss + self.reg_weight * reg_loss + cl_loss + self.item_rq_loss_rate * rq_loss + self.pop_loss_rate * pop_total_loss
 
         # item_side_info = self.process_item_side_info(interaction, excluded_info=['popularity'])
         # user_side_info = self.process_user_side_info(interaction)
@@ -653,5 +666,3 @@ class FairLightGCN(GeneralRecommender):
 
         # 拼接: [batch_size, 3 * emb_dim]
         return torch.concat(res, dim=-1)
-
-    def
