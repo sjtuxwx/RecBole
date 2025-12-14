@@ -409,7 +409,7 @@ class FairLightGCN(GeneralRecommender):
                 # ], dim=1)  # 假设是拼接
 
                 # 如果你是相加融合：
-                item_all_embeddings = self.fusion_gate_layer(self.item_embedding.weight, self.side_info_cache)
+                item_all_embeddings = self.get_fused_embeddings(self.item_embedding.weight, self.side_info_cache)
                 # item_all_embeddings = (1-self.alpha)*self.item_embedding.weight + self.alpha*self.side_info_cache
 
         # 3. 构造图卷积的初始 Ego Embedding
