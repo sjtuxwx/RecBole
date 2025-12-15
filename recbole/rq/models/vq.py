@@ -92,10 +92,10 @@ class VectorQuantizer(nn.Module):
         loss = codebook_loss + self.beta * commitment_loss
 
         # preserve gradients
-        x_q_ste = x + (x_q - x).detach()
+        x_q = x + (x_q - x).detach()
 
         indices = indices.view(x.shape[:-1])
 
-        return x_q_ste, loss, indices, x_q
+        return x_q, loss, indices
 
 

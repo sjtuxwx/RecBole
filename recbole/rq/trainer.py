@@ -111,7 +111,7 @@ class Trainer(object):
         for batch_idx, data in enumerate(iter_data):
             data = data.to(self.device)
             self.optimizer.zero_grad()
-            out, rq_loss, indices, *others = self.model(data)
+            out, rq_loss, indices = self.model(data)
             loss, loss_recon = self.model.compute_loss(out, rq_loss, xs=data)
             self._check_nan(loss)
             loss.backward()

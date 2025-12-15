@@ -39,20 +39,18 @@ class ResidualVectorQuantizer(nn.Module):
     def forward(self, x, use_sk=True):
         all_losses = []
         all_indices = []
-        all_x_res = []
 
         x_q = 0
         residual = x
         for quantizer in self.vq_layers:
-            x_res, loss, indices, x_q_raw = quantizer(residual, use_sk=use_sk)
-            residual = residual - x_q_raw
+            x_res, loss, indices = quantizer(residual, use_sk=use_sk)
+            residual = residual - x_res
             x_q = x_q + x_res
 
             all_losses.append(loss)
             all_indices.append(indices)
-            all_x_res.append(x_res)
 
         mean_losses = torch.stack(all_losses).mean()
         all_indices = torch.stack(all_indices, dim=-1)
 
-        return x_q, mean_losses, all_indices, residual, all_x_res
+        return x_q, mean_losses, all_indices, residual

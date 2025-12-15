@@ -305,12 +305,12 @@ class FairLightGCN(GeneralRecommender):
                     (1 - self.gama) * InfoNCE_i(item_view1_pop, item_view2_pop, item_view1_unpop, gama=self.beta))
 
     def forward_rq_item_epoch(self, rq_model, data):
-        out, rq_loss, indices, residual, all_codes = rq_model(data)
+        out, rq_loss, indices, residual = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
-        return out, rq_loss_total, indices, residual, all_codes
+        return out, rq_loss_total, indices, residual
     def forward_rq_user_epoch(self, rq_model, data):
-        out, rq_loss, indices, residual, all_codes = rq_model(data)
+        out, rq_loss, indices = rq_model(data)
         rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
 
         return out, rq_loss_total, indices
@@ -549,11 +549,11 @@ class FairLightGCN(GeneralRecommender):
         neg_embeddings = item_all_embeddings[neg_item]
 
         batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0)
-        out, rq_loss, indices, residual, all_codes = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
+        out, rq_loss, indices, residual = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
         codebook = self.rq_model_item.rq.get_codebook()
         pop_info = torch.cat([interaction['popularity'], interaction['neg_popularity']])
-        pop_book = all_codes[0]
-        content_book = all_codes[1] + all_codes[2]
+        pop_book = codebook[0][indices[:, 0]]
+        content_book = codebook[1][indices[:, 1]] + codebook[2][indices[:, 2]]
         pop_res = self.pop_predictor(pop_book)
         content_book_ref = grad_reverse(content_book)
         content_res = self.pop_predictor(content_book_ref)
