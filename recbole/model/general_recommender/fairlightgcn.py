@@ -144,6 +144,10 @@ class FairLightGCN(GeneralRecommender):
             self.enable_user_loss = False
         else:
             self.enable_user_loss = config['enable_user_loss']
+        if config['content_bpr_loss_rate'] is None:
+            self.content_bpr_loss_rate = 0.0
+        else:
+            self.content_bpr_loss_rate = config['content_bpr_loss_rate']
         # if "eps" in config.keys():
         #     self.eps = config["eps"]
         # else:
@@ -342,7 +346,7 @@ class FairLightGCN(GeneralRecommender):
         gate_input = id_embeddings
 
         # 计算门控系数 g: [N, 1]
-        gate = self.fusion_gate_layer(gate_input).detach()
+        gate = self.fusion_gate_layer(gate_input.detach())
 
         # 加权融合 (保持不变)
         # E_final = (1 - g) * ID + g * Side
@@ -577,7 +581,7 @@ class FairLightGCN(GeneralRecommender):
         neg_scores = torch.mul(u_embeddings, neg_embeddings).sum(dim=1)
         pos_content_scores = torch.mul(u_embeddings, content_pos_item_embedding).sum(dim=1)
         neg_content_scores = torch.mul(u_embeddings, content_neg_item_embedding).sum(dim=1)
-        mf_loss = self.mf_loss(pos_scores, neg_scores) + 15 * self.mf_loss(pos_content_scores, neg_content_scores)
+        mf_loss = self.mf_loss(pos_scores, neg_scores) + self.content_bpr_loss_rate * self.mf_loss(pos_content_scores, neg_content_scores)
 
         # calculate regularization Loss
         u_ego_embeddings = self.user_embedding(user)

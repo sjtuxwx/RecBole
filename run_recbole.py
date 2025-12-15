@@ -131,6 +131,12 @@ if __name__ == "__main__":
         default=0.2
     )
 
+    parser.add_argument(
+        "--content_bpr_loss_rate",
+        type=float,
+        default=0.0
+    )
+
     args, _ = parser.parse_known_args()
 
     config_file_list = (
