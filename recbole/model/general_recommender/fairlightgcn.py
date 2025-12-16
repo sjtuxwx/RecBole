@@ -569,7 +569,7 @@ class FairLightGCN(GeneralRecommender):
         pop_item_embedding = out + (pop_item_embedding - out).detach()
         pop_res = self.pop_predictor(pop_item_embedding)
         content_res = self.pop_predictor(grad_reverse(content_item_embedding))
-        pop_total_loss = pop_res_loss + content_res_loss
+        pop_total_loss = pop_res + content_res
 
         content_pos_item_embedding, content_neg_item_embedding = torch.split(content_item_embedding, pos_item.shape[0])
 
