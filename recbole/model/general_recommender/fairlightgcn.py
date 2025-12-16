@@ -31,7 +31,7 @@ from torch.nn.functional import embedding
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.layers import MLPLayers
-from recbole.model.loss import BPRLoss, EmbLoss
+from recbole.model.loss import BPRLoss, EmbLoss, OrthogonalLoss
 from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
 from recbole.rq.models.rqvae import RQVAE
@@ -88,6 +88,7 @@ class FairLightGCN(GeneralRecommender):
             num_embeddings=self.n_items, embedding_dim=self.latent_dim
         )
         self.mf_loss = BPRLoss()
+        self.orthogonal_loss = OrthogonalLoss()
         self.reg_loss = EmbLoss()
 
         # storage variables for full sort evaluation acceleration
@@ -159,7 +160,7 @@ class FairLightGCN(GeneralRecommender):
         
         # 这里需要去掉 popularity 这个 extra_info
         self.rq_model_item = RQVAE(in_dim=self.latent_dim,
-                  num_emb_list=[256, 32, 32],
+                  num_emb_list=[64, 32, 32],
                   e_dim=16,
                   layers=[64, 32, 16],
                   dropout_prob=0.1,
@@ -548,7 +549,7 @@ class FairLightGCN(GeneralRecommender):
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
 
-        batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0).detach()
+        batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0)
         out, rq_loss, indices, residual = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
         codebook = self.rq_model_item.rq.get_codebook()
         pop_info = torch.cat([interaction['popularity'], interaction['neg_popularity']])
@@ -567,15 +568,16 @@ class FairLightGCN(GeneralRecommender):
 
         content_item_embedding = out + (content_item_embedding - out).detach()
         pop_item_embedding = out + (pop_item_embedding - out).detach()
-        pop_res = self.pop_predictor(pop_item_embedding)
-        content_res = self.pop_predictor(grad_reverse(content_item_embedding))
-        pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
-        content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
+        pop_total_loss = self.orthogonal_loss(pop_item_embedding, content_item_embedding)
+        # pop_res = self.pop_predictor(pop_item_embedding)
+        # content_res = self.pop_predictor(grad_reverse(content_item_embedding))
+        # pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
+        # content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
         
         # pop_total_loss = pop_res_loss + content_res_loss
-        pop_total_loss = pop_res_loss
+        # pop_total_loss = pop_res_loss
 
-        content_pos_item_embedding, content_neg_item_embedding = torch.split(out, pos_item.shape[0])
+        content_pos_item_embedding, content_neg_item_embedding = torch.split(content_item_embedding, pos_item.shape[0])
 
 
 

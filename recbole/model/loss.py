@@ -17,7 +17,35 @@ Common Loss in recommender system
 import torch
 import torch.nn as nn
 
+class OrthogonalLoss(nn.Module):
+    """OrthogonalLoss, to encourage two embedding spaces to be orthogonal (independent).
+    
+    It minimizes the squared cosine similarity between two sets of embeddings.
+    """
 
+    def __init__(self):
+        super(OrthogonalLoss, self).__init__()
+
+    def forward(self, embedding1, embedding2):
+        """
+        Args:
+            embedding1 (torch.Tensor): [batch_size, dim]
+            embedding2 (torch.Tensor): [batch_size, dim]
+        """
+        # 1. L2 Normalization (to ignore magnitude, focus on direction)
+        norm1 = torch.norm(embedding1, p=2, dim=1, keepdim=True) + 1e-7
+        norm2 = torch.norm(embedding2, p=2, dim=1, keepdim=True) + 1e-7
+        emb1_norm = embedding1 / norm1
+        emb2_norm = embedding2 / norm2
+
+        # 2. Dot Product (Cosine Similarity because of normalization)
+        # sum(A * B, dim=1) computes row-wise dot product
+        cosine_sim = torch.sum(emb1_norm * emb2_norm, dim=1)
+
+        # 3. Square the similarity to punish any deviation from 0 (orthogonality)
+        loss = torch.mean(cosine_sim ** 2)
+        
+        return loss
 class BPRLoss(nn.Module):
     """BPRLoss, based on Bayesian Personalized Ranking
 
