@@ -22,7 +22,8 @@ from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_normal_initialization
 from recbole.model.loss import BPRLoss
 from recbole.utils import InputType
-from recbole.utils.fair_utils import args2class
+from recbole.utils.fair_utils import args2class, forward_rq_item_epoch
+from recbole.rq.rqvae import RQVAE
 
 class FairBPR(GeneralRecommender):
     r"""BPR is a basic matrix factorization model that be trained in the pairwise way."""
@@ -40,6 +41,22 @@ class FairBPR(GeneralRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.embedding_size)
         self.loss = BPRLoss()
         args2class(self, config)
+        self.rq_model_item = RQVAE(
+            in_dim=self.latent_dim,
+            num_emb_list=[64, 32, 32],
+            e_dim=16,
+            layers=[64, 32, 16],
+            dropout_prob=0.1,
+            bn=False,
+            loss_type='mse',
+            quant_loss_weight=1,
+            beta=0.25,
+            kmeans_init=True,
+            kmeans_iters=100,
+            sk_epsilons=[0.0, 0.0, 0.0],
+            sk_iters=50,
+            pop_dim=self.latent_dim
+        )
 
         # parameters initialization
         self.apply(xavier_normal_initialization)
@@ -78,10 +95,20 @@ class FairBPR(GeneralRecommender):
 
         user_e, pos_e = self.forward(user, pos_item)
         neg_e = self.get_item_embedding(neg_item)
+
+        batch_item_embeddings = torch.cat([pos_e, neg_e], dim=0)
+        out, rq_loss_total, indices, residual = forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
+        pos_out, neg_out = torch.split(out, [pos_e.shape[0], neg_e.shape[0]], dim = 0)
         pos_item_score, neg_item_score = torch.mul(user_e, pos_e).sum(dim=1), torch.mul(
             user_e, neg_e
         ).sum(dim=1)
+
+        pos_rq_score, neg_rq_score = torch.mul(user_e, pos_out).sum(dim=1), torch.mul(
+            user_e, neg_out
+        ).sum(dim=1)
         loss = self.loss(pos_item_score, neg_item_score)
+        content_loss = self.loss(pos_rq_score, neg_rq_score)
+        loss = loss + self.item_rq_loss_rate * rq_loss_total + self.content_bpr_loss_rate * content_loss
         return loss
 
     def predict(self, interaction):

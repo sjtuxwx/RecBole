@@ -77,3 +77,8 @@ def gen_extra_embedding(eInfo, latent_dim, device):
         )
         user_extra_embedding[extra_info] =  aa
     return item_extra_embedding, user_extra_embedding
+
+def forward_rq_item_epoch(rq_model, data):
+    out, rq_loss, indices, residual = rq_model(data)
+    rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
+    return out, rq_loss_total, indices, residual
