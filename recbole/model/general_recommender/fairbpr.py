@@ -22,15 +22,15 @@ from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_normal_initialization
 from recbole.model.loss import BPRLoss
 from recbole.utils import InputType
+from recbole.utils.fair_utils import args2class
 
-
-class BPR(GeneralRecommender):
+class FairBPR(GeneralRecommender):
     r"""BPR is a basic matrix factorization model that be trained in the pairwise way."""
 
     input_type = InputType.PAIRWISE
 
     def __init__(self, config, dataset):
-        super(BPR, self).__init__(config, dataset)
+        super(FairBPR, self).__init__(config, dataset)
 
         # load parameters info
         self.embedding_size = config["embedding_size"]
@@ -39,6 +39,7 @@ class BPR(GeneralRecommender):
         self.user_embedding = nn.Embedding(self.n_users, self.embedding_size)
         self.item_embedding = nn.Embedding(self.n_items, self.embedding_size)
         self.loss = BPRLoss()
+        args2class(self, config)
 
         # parameters initialization
         self.apply(xavier_normal_initialization)
