@@ -70,6 +70,7 @@ class FairBPR(GeneralRecommender):
             self.side_info_ln
         )
 
+
         # parameters initialization
         self.apply(xavier_normal_initialization)
         self.item_extra_embedding, self.user_extra_embedding = (
@@ -98,7 +99,7 @@ class FairBPR(GeneralRecommender):
         gate_input = id_embeddings
 
         # 计算门控系数 g: [N, 1]
-        gate = self.fusion_gate_layer(gate_input.detach())
+        gate = self.fusion_gate_layer(gate_input)
 
         # 加权融合 (保持不变)
         # E_final = (1 - g) * ID + g * Side
@@ -166,17 +167,32 @@ class FairBPR(GeneralRecommender):
         """
         return self.item_embedding(item)
 
-    def forward(self, user, item):
+    def forward(self, user, item, custom_item_matrix=None):
         user_e = self.get_user_embedding(user)
         item_e = self.get_item_embedding(item)
+        if custom_item_matrix is not None:
+            item_e = custom_item_matrix
         return user_e, item_e
+
+    def get_strength_item_embedding(self, interaction, pos_item):
+        batch_mlp_input = self.get_batch_mlp_input(interaction, pos_item)
+
+        # --------------------------------------------------------
+        # Step 2: Online MLP 计算 (热计算 -> 算梯度)
+        # --------------------------------------------------------
+        # 这部分带有梯度，反向传播会更新 MLP 和 Side Info 的 Embedding 表
+        batch_online_emb = self.fusion_side_info(batch_mlp_input)
+        input_matrix = self.get_fused_embeddings(self.item_embedding(pos_item), batch_online_emb)
+        return input_matrix
 
     def calculate_loss(self, interaction):
         user = interaction[self.USER_ID]
         pos_item = interaction[self.ITEM_ID]
         neg_item = interaction[self.NEG_ITEM_ID]
 
-        user_e, pos_e = self.forward(user, pos_item)
+        input_matrix = self.get_strength_item_embedding(interaction, pos_item)
+
+        user_e, pos_e = self.forward(user, pos_item, custom_item_matrix=input_matrix)
         neg_e = self.get_item_embedding(neg_item)
 
         batch_item_embeddings = torch.cat([pos_e, neg_e], dim=0)
@@ -206,4 +222,3 @@ class FairBPR(GeneralRecommender):
         all_item_e = self.item_embedding.weight
         score = torch.matmul(user_e, all_item_e.transpose(0, 1))
         return score.view(-1)
-
