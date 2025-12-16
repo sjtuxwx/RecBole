@@ -27,7 +27,7 @@ import torch.nn.functional as F
 from scipy.ndimage import label
 import torch.nn as nn
 from torch.nn.functional import embedding
-
+from recbole.utils.fair_utils import grad_reverse, args2class, gen_extra_embedding
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.layers import MLPLayers
@@ -36,19 +36,6 @@ from recbole.utils import InputType
 from recbole.fairness.pop_utils import InfoNCE, split_by_pop, InfoNCE_i
 from recbole.rq.models.rqvae import RQVAE
 
-class GradientReversalLayer(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-        return x.view_as(x)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        output = grad_output.neg() * ctx.alpha
-        return output, None
-
-def grad_reverse(x, alpha=1.0):
-    return GradientReversalLayer.apply(x, alpha)
 
 class FairLightGCN(GeneralRecommender):
     r"""LightGCN is a GCN-based recommender model.
@@ -102,58 +89,16 @@ class FairLightGCN(GeneralRecommender):
         self.apply(xavier_uniform_initialization)
         self.other_parameter_name = ["restore_user_e", "restore_item_e"]
 
-        if config['eps'] is None:
-            self.eps = 0.2
-        else:
-            self.eps = config['eps']
+        args2class(self, config)
 
-        if config['gama'] is None:
-            self.gama = 0.2
-        else:
-            self.gama = config['gama']
 
-        if config['beta'] is None:
-            self.beta = 0.2
-        else:
-            self.beta = config['beta']
-
-        if config['cl_rate'] is None:
-            self.cl_rate = 0.2
-        else:
-            self.cl_rate = config['cl_rate']
-
-        if config['item_rq_loss_rate'] is None:
-            self.item_rq_loss_rate = 0.2
-        else:
-            self.item_rq_loss_rate = config['item_rq_loss_rate']
-        if config['pop_rate'] is None:
-            self.pop_rate = 0.2
-        else:
-            self.pop_rate = config['pop_rate']
-
-        if config['item_loss_type'] is None:
-            self.item_loss_type = 'full'
-        else:
-            self.item_loss_type = config['item_loss_type']
-            
-        if config['pop_loss_rate'] is None:
-            self.pop_loss_rate = 0.2
-        else:
-            self.pop_loss_rate = config['pop_loss_rate']
-
-        if config['enable_user_loss'] is None:
-            self.enable_user_loss = False
-        else:
-            self.enable_user_loss = config['enable_user_loss']
-        if config['content_bpr_loss_rate'] is None:
-            self.content_bpr_loss_rate = 0.0
-        else:
-            self.content_bpr_loss_rate = config['content_bpr_loss_rate']
         # if "eps" in config.keys():
         #     self.eps = config["eps"]
         # else:
         #     self.eps = 0.2
-        self.gen_extra_embedding()
+        self.item_extra_embedding, self.user_extra_embedding = (
+            gen_extra_embedding(self.eInfo, self.latent_dim, self.device)
+        )
         self.item_strong_dim = self.latent_dim * ((len(self.eInfo['item']))  - 1)
         self.item_strong_info = nn.Parameter()
 
@@ -414,7 +359,7 @@ class FairLightGCN(GeneralRecommender):
                 # ], dim=1)  # 假设是拼接
 
                 # 如果你是相加融合：
-                item_all_embeddings = self.get_fused_embeddings(self.item_embedding.weight, self.side_info_cache)
+                item_all_embeddings = self.fusion_gate_layer(self.item_embedding.weight, self.side_info_cache)
                 # item_all_embeddings = (1-self.alpha)*self.item_embedding.weight + self.alpha*self.side_info_cache
 
         # 3. 构造图卷积的初始 Ego Embedding
