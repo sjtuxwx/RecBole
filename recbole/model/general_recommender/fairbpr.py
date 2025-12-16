@@ -58,7 +58,7 @@ class FairBPR(GeneralRecommender):
             sk_iters=50,
             pop_dim=self.embedding_size
         )
-        self.item_strong_dim = self.latent_dim * ((len(self.eInfo['item'])) - 1)
+        self.item_strong_dim = self.embedding_size * ((len(self.eInfo['item'])) - 1)
         self.item_strong_info = nn.Parameter()
         self.fusion_side_info = MLPLayers(
             [self.item_strong_dim, self.embedding_size],
@@ -68,6 +68,12 @@ class FairBPR(GeneralRecommender):
         self.fusion_side_info = nn.Sequential(
             self.fusion_side_info,
             self.side_info_ln
+        )
+        self.fusion_gate_layer = nn.Sequential(
+            nn.Linear(self.embedding_size, self.embedding_size),  # 输入维度减半
+            nn.Tanh(),
+            nn.Linear(self.embedding_size, 1),
+            nn.Sigmoid()
         )
 
 
