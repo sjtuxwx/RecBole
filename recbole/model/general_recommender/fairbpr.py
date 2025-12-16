@@ -75,6 +75,7 @@ class FairBPR(GeneralRecommender):
             nn.Linear(self.embedding_size, 1),
             nn.Sigmoid()
         )
+        self.NEG_PREFIX = "neg_"
 
 
         # parameters initialization
@@ -113,7 +114,7 @@ class FairBPR(GeneralRecommender):
 
         return fused_embeddings
 
-    def get_batch_mlp_input(self, interaction, item_indices):
+    def get_batch_mlp_input(self, interaction, prefix: str):
         """
         获取指定 Item 的 3个 Side Info Embedding 并拼接，作为 MLP 的输入
         """
@@ -128,7 +129,7 @@ class FairBPR(GeneralRecommender):
 
             # 这里为了通用性，假设 dataset.get_item_feature 存在
             # 或者如果 interaction 包含了当前 batch 的列，直接取
-            feature_val = interaction[extra_info]
+            feature_val = interaction[prefix + extra_info]
 
             # 如果 feature_val 已经是 batch 后的数据，直接用
             emb = self.extra_embedding_forward(extra_info, feature_val)
@@ -180,8 +181,8 @@ class FairBPR(GeneralRecommender):
             item_e = custom_item_matrix
         return user_e, item_e
 
-    def get_strength_item_embedding(self, interaction, pos_item):
-        batch_mlp_input = self.get_batch_mlp_input(interaction, pos_item)
+    def get_strength_item_embedding(self, interaction, pos_item, prefix:str = ''):
+        batch_mlp_input = self.get_batch_mlp_input(interaction, prefix)
 
         # --------------------------------------------------------
         # Step 2: Online MLP 计算 (热计算 -> 算梯度)
@@ -196,10 +197,14 @@ class FairBPR(GeneralRecommender):
         pos_item = interaction[self.ITEM_ID]
         neg_item = interaction[self.NEG_ITEM_ID]
 
-        input_matrix = self.get_strength_item_embedding(interaction, pos_item)
 
-        user_e, pos_e = self.forward(user, pos_item, custom_item_matrix=input_matrix)
-        neg_e = self.get_item_embedding(neg_item)
+        # all_item = torch.cat([pos_item, neg_item], dim=0)
+        pos_matrix = self.get_strength_item_embedding(interaction, pos_item)
+        neg_matrix = self.get_strength_item_embedding(interaction, neg_item, prefix=self.NEG_PREFIX)    
+        # pos_matrix, neg_matrix = torch.split(input_matrix, [pos_item.shape[0], neg_item.shape[0]], dim=0)
+
+        user_e, pos_e = self.forward(user, pos_item, custom_item_matrix=pos_matrix)
+        neg_e = neg_matrix if neg_matrix is not None else self.get_item_embedding(neg_item)
 
         batch_item_embeddings = torch.cat([pos_e, neg_e], dim=0)
         out, rq_loss_total, indices, residual = forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
@@ -219,12 +224,14 @@ class FairBPR(GeneralRecommender):
     def predict(self, interaction):
         user = interaction[self.USER_ID]
         item = interaction[self.ITEM_ID]
-        user_e, item_e = self.forward(user, item)
+        input_matrix = self.get_strength_item_embedding(interaction, item)
+        user_e, item_e = self.forward(user, item, custom_item_matrix=input_matrix)
         return torch.mul(user_e, item_e).sum(dim=1)
 
     def full_sort_predict(self, interaction):
         user = interaction[self.USER_ID]
         user_e = self.get_user_embedding(user)
         all_item_e = self.item_embedding.weight
+        all_item_e = self.get_strength_item_embedding(interaction, interaction[self.ITEM_ID])
         score = torch.matmul(user_e, all_item_e.transpose(0, 1))
         return score.view(-1)
