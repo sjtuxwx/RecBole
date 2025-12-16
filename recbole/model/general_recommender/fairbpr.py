@@ -55,7 +55,7 @@ class FairBPR(GeneralRecommender):
             kmeans_iters=100,
             sk_epsilons=[0.0, 0.0, 0.0],
             sk_iters=50,
-            pop_dim=self.latent_dim
+            pop_dim=self.embedding_size
         )
 
         # parameters initialization
