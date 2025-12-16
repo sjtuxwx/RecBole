@@ -210,9 +210,9 @@ class FairLightGCN(GeneralRecommender):
         )
 
         self.pop_predictor = nn.Sequential(
-            nn.Linear(16, 16 // 2),
+            nn.Linear(self.latent_dim, self.latent_dim // 2),
             nn.Tanh(),
-            nn.Linear(16 // 2, 1),
+            nn.Linear(self.latent_dim // 2, 1),
             # nn.Sigmoid()
         )
 
@@ -554,15 +554,23 @@ class FairLightGCN(GeneralRecommender):
         pop_info = torch.cat([interaction['popularity'], interaction['neg_popularity']])
         pop_book = codebook[0][indices[:, 0]]
         content_book = codebook[1][indices[:, 1]] + codebook[2][indices[:, 2]]
-        pop_res = self.pop_predictor(pop_book)
-        content_book_ref = grad_reverse(content_book)
-        content_res = self.pop_predictor(content_book_ref)
-        pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
-        content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
-        
-        pop_total_loss = pop_res_loss + content_res_loss
+        # pop_res = self.pop_predictor(pop_book)
+        # content_book_ref = grad_reverse(content_book)
+        # content_res = self.pop_predictor(content_book_ref)
+        # pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
+        # content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
+        #
+        # pop_total_loss = pop_res_loss + content_res_loss
         
         content_item_embedding = self.rq_model_item.decoder(content_book)
+        pop_item_embedding = self.rq_model_item.decoder(pop_book)
+
+        content_item_embedding = out + (content_item_embedding - out).detach()
+        pop_item_embedding = out + (pop_item_embedding - out).detach()
+        pop_res = self.pop_predictor(pop_item_embedding)
+        content_res = self.pop_predictor(grad_reverse(content_item_embedding))
+        pop_total_loss = pop_res_loss + content_res_loss
+
         content_pos_item_embedding, content_neg_item_embedding = torch.split(content_item_embedding, pos_item.shape[0])
 
 
