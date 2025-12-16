@@ -17,7 +17,7 @@ Reference:
 
 import torch
 import torch.nn as nn
-
+import copy
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_normal_initialization
 from recbole.model.layers import MLPLayers
@@ -75,6 +75,22 @@ class FairBPR(GeneralRecommender):
             nn.Linear(self.embedding_size, 1),
             nn.Sigmoid()
         )
+        self.register_buffer(
+            'side_info_cache',
+            torch.zeros(self.n_items, self.embedding_size)
+        )
+        # 动量系数 (建议 0.99 或 0.999)
+        self.momentum = config['momentum'] if 'momentum' in config else 0.995
+
+        # ============================================================
+        # 2. 定义 Target MLP (师父 - 用于生成稳定缓存)
+        # ============================================================
+        # 深拷贝 Online MLP，保证结构初始参数一致
+        self.fusion_side_info_target = copy.deepcopy(self.fusion_side_info)
+
+        # 核心：完全冻结 Target MLP，不接受梯度，只接受动量更新
+        for param in self.fusion_side_info_target.parameters():
+            param.requires_grad = False
 
 
         # parameters initialization
@@ -82,6 +98,14 @@ class FairBPR(GeneralRecommender):
         self.item_extra_embedding, self.user_extra_embedding = (
             gen_extra_embedding(self.eInfo, self.embedding_size, self.device)
         )
+
+    @torch.no_grad()
+    def _update_target_network(self):
+        """
+        Momentum update: theta_target = m * theta_target + (1 - m) * theta_online
+        """
+        for param_o, param_t in zip(self.fusion_side_info.parameters(), self.fusion_side_info_target.parameters()):
+            param_t.data = param_t.data * self.momentum + param_o.data * (1.0 - self.momentum)
 
     def process_item_side_info(self, interaction, excluded_info:list):
         res = []
