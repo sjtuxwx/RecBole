@@ -548,7 +548,7 @@ class FairLightGCN(GeneralRecommender):
         pos_embeddings = item_all_embeddings[pos_item]
         neg_embeddings = item_all_embeddings[neg_item]
 
-        batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0)
+        batch_item_embeddings = torch.cat([pos_embeddings, neg_embeddings], dim=0).detach()
         out, rq_loss, indices, residual = self.forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
         codebook = self.rq_model_item.rq.get_codebook()
         pop_info = torch.cat([interaction['popularity'], interaction['neg_popularity']])
@@ -569,9 +569,13 @@ class FairLightGCN(GeneralRecommender):
         pop_item_embedding = out + (pop_item_embedding - out).detach()
         pop_res = self.pop_predictor(pop_item_embedding)
         content_res = self.pop_predictor(grad_reverse(content_item_embedding))
-        pop_total_loss = pop_res + content_res
+        pop_res_loss = F.binary_cross_entropy_with_logits(pop_res.squeeze(1), pop_info)
+        content_res_loss = F.binary_cross_entropy_with_logits(content_res.squeeze(1), pop_info)
+        
+        # pop_total_loss = pop_res_loss + content_res_loss
+        pop_total_loss = pop_res_loss
 
-        content_pos_item_embedding, content_neg_item_embedding = torch.split(content_item_embedding, pos_item.shape[0])
+        content_pos_item_embedding, content_neg_item_embedding = torch.split(out, pos_item.shape[0])
 
 
 
