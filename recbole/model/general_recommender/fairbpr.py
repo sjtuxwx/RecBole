@@ -20,9 +20,10 @@ import torch.nn as nn
 
 from recbole.model.abstract_recommender import GeneralRecommender
 from recbole.model.init import xavier_normal_initialization
+from recbole.model.layers import MLPLayers
 from recbole.model.loss import BPRLoss
 from recbole.utils import InputType
-from recbole.utils.fair_utils import args2class, forward_rq_item_epoch
+from recbole.utils.fair_utils import args2class, forward_rq_item_epoch, gen_extra_embedding
 from recbole.rq.models.rqvae import RQVAE
 
 class FairBPR(GeneralRecommender):
@@ -42,7 +43,7 @@ class FairBPR(GeneralRecommender):
         self.loss = BPRLoss()
         args2class(self, config)
         self.rq_model_item = RQVAE(
-            in_dim=self.latent_dim,
+            in_dim=self.embedding_size,
             num_emb_list=[64, 32, 32],
             e_dim=16,
             layers=[64, 32, 16],
@@ -57,9 +58,91 @@ class FairBPR(GeneralRecommender):
             sk_iters=50,
             pop_dim=self.embedding_size
         )
+        self.item_strong_dim = self.latent_dim * ((len(self.eInfo['item'])) - 1)
+        self.item_strong_info = nn.Parameter()
+        self.fusion_side_info = MLPLayers(
+            [self.item_strong_dim, self.embedding_size],
+            dropout=0.2, activation="sigmoid", last_activation=False
+        )
+        self.side_info_ln = nn.LayerNorm(self.embedding_size)
+        self.fusion_side_info = nn.Sequential(
+            self.fusion_side_info,
+            self.side_info_ln
+        )
 
         # parameters initialization
         self.apply(xavier_normal_initialization)
+        self.item_extra_embedding, self.user_extra_embedding = (
+            gen_extra_embedding(self.eInfo, self.embedding_size, self.device)
+        )
+
+    def process_item_side_info(self, interaction, excluded_info:list):
+        res = []
+        for extra_info in self.eInfo['item']:
+            item = interaction[extra_info]
+            if extra_info in excluded_info:
+                continue
+            emb = self.extra_embedding_forward(extra_info, item)
+            res.append(emb)
+        res.append(self.item_embedding(interaction[self.ITEM_ID]))
+        return torch.concat(res, dim=-1)
+
+    def get_fused_embeddings(self, id_embeddings, side_embeddings):
+        """
+        利用门控机制融合 ID 和 Side Info
+        """
+        # ============================================================
+        # 【修改点】: 只使用 ID Embedding 来计算门控系数
+        # 逻辑：根据 Item 自身的特性（如是否热门、是否训练充分）来决定融合比例
+        # ============================================================
+        gate_input = id_embeddings
+
+        # 计算门控系数 g: [N, 1]
+        gate = self.fusion_gate_layer(gate_input.detach())
+
+        # 加权融合 (保持不变)
+        # E_final = (1 - g) * ID + g * Side
+        fused_embeddings = (1 - gate) * id_embeddings + gate * side_embeddings
+
+        return fused_embeddings
+
+    def get_batch_mlp_input(self, interaction, item_indices):
+        """
+        获取指定 Item 的 3个 Side Info Embedding 并拼接，作为 MLP 的输入
+        """
+        res = []
+        # 遍历 3 个 Side Info (例如 category, color, brand)
+        for extra_info in self.eInfo['item']:
+            if extra_info == 'popularity':
+                continue
+            # 从 interaction 里拿到对应的特征 ID
+            # 注意：这里需要确保 interaction 能通过索引拿到 item_indices 对应的特征
+            # 如果 interaction 是整个 batch 的，你需要先 slice 出来
+
+            # 这里为了通用性，假设 dataset.get_item_feature 存在
+            # 或者如果 interaction 包含了当前 batch 的列，直接取
+            feature_val = interaction[extra_info]
+
+            # 如果 feature_val 已经是 batch 后的数据，直接用
+            emb = self.extra_embedding_forward(extra_info, feature_val)
+            res.append(emb)
+
+        # 拼接: [batch_size, 3 * emb_dim]
+        return torch.concat(res, dim=-1)
+
+    def extra_embedding_forward(self, extra_info, item):
+        embedding_layer = self.item_extra_embedding[extra_info]
+        self.item_embedding_name = []
+        emb = embedding_layer(item)
+        if item.dim() == 2:
+            mask = (item != 0).unsqueeze(-1)  # [batch_size, seq_len, 1]
+            emb_masked = emb * mask  # [batch_size, seq_len, embedding_dim]
+            valid_count = mask.sum(dim=1)  # [batch_size, 1]
+            mean_emb = emb_masked.sum(dim=1) / valid_count.clamp(min=1)  # [batch_size, embedding_dim]
+            return mean_emb
+        else:
+            # 一维时直接返回 embedding
+            return emb
 
     def get_user_embedding(self, user):
         r"""Get a batch of user embedding tensor according to input user's id.
@@ -123,3 +206,4 @@ class FairBPR(GeneralRecommender):
         all_item_e = self.item_embedding.weight
         score = torch.matmul(user_e, all_item_e.transpose(0, 1))
         return score.view(-1)
+
