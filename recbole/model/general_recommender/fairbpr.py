@@ -214,7 +214,7 @@ class FairBPR(GeneralRecommender):
         # 这部分带有梯度，反向传播会更新 MLP 和 Side Info 的 Embedding 表
         batch_online_emb = self.fusion_side_info(batch_mlp_input)
         input_matrix = self.get_fused_embeddings(self.item_embedding(pos_item), batch_online_emb)
-        return input_matrix
+        return input_matrix, batch_mlp_input
 
     def calculate_loss(self, interaction):
         user = interaction[self.USER_ID]
@@ -223,8 +223,21 @@ class FairBPR(GeneralRecommender):
 
 
         # all_item = torch.cat([pos_item, neg_item], dim=0)
-        pos_matrix = self.get_strength_item_embedding(interaction, pos_item)
-        neg_matrix = self.get_strength_item_embedding(interaction, neg_item, prefix=self.NEG_PREFIX)
+        pos_matrix, pos_batch_item_embedding = self.get_strength_item_embedding(interaction, pos_item)
+        neg_matrix, neg_batch_item_embedding = self.get_strength_item_embedding(interaction, neg_item, prefix=self.NEG_PREFIX)
+        with torch.no_grad():
+            # a. 动量更新参数
+            self._update_target_network()
+
+            # b. 用 Target 网络算一遍
+            pos_batch_target_emb = self.fusion_side_info_target(pos_batch_item_embedding)
+            neg_target_emb = self.fusion_side_info_target(neg_batch_item_embedding)
+
+            # c. 写入全局缓存
+            # 注意：这里我们只更新 pos_item 对应的行
+            # .detach() 双重保险，确保不带计算图
+            self.side_info_cache[pos_item] = pos_batch_target_emb.detach()
+            self.side_info_cache[neg_item] = neg_target_emb.detach()
         # pos_matrix, neg_matrix = torch.split(input_matrix, [pos_item.shape[0], neg_item.shape[0]], dim=0)
 
         user_e, pos_e = self.forward(user, pos_item, custom_item_matrix=pos_matrix)
@@ -256,6 +269,6 @@ class FairBPR(GeneralRecommender):
         user = interaction[self.USER_ID]
         user_e = self.get_user_embedding(user)
         all_item_e = self.item_embedding.weight
-        all_item_e = self.get_strength_item_embedding(interaction, interaction[self.ITEM_ID])
+        all_item_e = self.get_fused_embeddings(all_item_e, self.side_info_cache)
         score = torch.matmul(user_e, all_item_e.transpose(0, 1))
         return score.view(-1)
