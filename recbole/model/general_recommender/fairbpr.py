@@ -23,7 +23,7 @@ from recbole.model.init import xavier_normal_initialization
 from recbole.model.loss import BPRLoss
 from recbole.utils import InputType
 from recbole.utils.fair_utils import args2class, forward_rq_item_epoch
-from recbole.rq.rqvae import RQVAE
+from recbole.rq.models.rqvae import RQVAE
 
 class FairBPR(GeneralRecommender):
     r"""BPR is a basic matrix factorization model that be trained in the pairwise way."""
