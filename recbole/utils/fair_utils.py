@@ -71,6 +71,7 @@ def args2class(self, config):
     else:
         self.task = config['task']
 
+
 def gen_extra_embedding(eInfo, latent_dim, device):
     item_extra_embedding = torch.nn.ModuleDict()
     user_extra_embedding = torch.nn.ModuleDict()
@@ -90,3 +91,11 @@ def forward_rq_item_epoch(rq_model, data):
     out, rq_loss, indices, residual = rq_model(data)
     rq_loss_total, rq_rec = rq_model.compute_loss(out, rq_loss, xs=data)
     return out, rq_loss_total, indices, residual
+
+def forward_mutil_decoder_rq_item_epoch(rq_model, data):
+    out, rq_loss, indices, residual = rq_model(data)
+
+    rq_loss_total, rq_rec = rq_model.compute_multi_loss(out, rq_loss, xs=data)
+
+    return out, rq_loss_total, indices, residual
+

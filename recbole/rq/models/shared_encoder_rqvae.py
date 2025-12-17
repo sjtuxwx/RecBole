@@ -5,6 +5,7 @@ from numpy.core.numeric import indices
 from torch import nn
 from torch.cuda.nccl import init_rank
 from torch.nn import functional as F
+from torch.nn.functional import l1_loss
 
 from .layers import MLPLayers
 from .rq import ResidualVectorQuantizer
@@ -120,4 +121,12 @@ class Shared_Encoder_RQVAE(nn.Module):
         #     loss_recon = loss_recon.mean()
         loss_total = loss_recon + self.quant_loss_weight * quant_loss
 
+        return loss_total, loss_recon
+    def compute_multi_loss(self, out, quant_loss, xs=None):
+        loss_total = 0
+        loss_recon = 0
+        for ot, qls in zip(out, quant_loss):
+            ll, lc = self.compute_loss(ot, qls, xs)
+            loss_total += ll
+            loss_recon += lc
         return loss_total, loss_recon
