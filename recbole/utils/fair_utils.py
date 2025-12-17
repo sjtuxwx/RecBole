@@ -62,6 +62,14 @@ def args2class(self, config):
         self.content_bpr_loss_rate = 0.0
     else:
         self.content_bpr_loss_rate = config['content_bpr_loss_rate']
+    if config['enable_side_fuse'] is None:
+        self.enable_side_fuse = False
+    else:
+        self.enable_side_fuse = config['enable_side_fuse']
+    if config['task'] is None:
+        self.task = 'xwx'
+    else:
+        self.task = config['task']
 
 def gen_extra_embedding(eInfo, latent_dim, device):
     item_extra_embedding = torch.nn.ModuleDict()

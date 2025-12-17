@@ -44,7 +44,7 @@ class FairBPR(GeneralRecommender):
         args2class(self, config)
         self.rq_model_item = RQVAE(
             in_dim=self.embedding_size,
-            num_emb_list=[64, 32, 32],
+            num_emb_list=[16, 16, 16],
             e_dim=16,
             layers=[64, 32, 16],
             dropout_prob=0.1,
@@ -60,38 +60,39 @@ class FairBPR(GeneralRecommender):
         )
         self.item_strong_dim = self.embedding_size * ((len(self.eInfo['item'])) - 1)
         self.item_strong_info = nn.Parameter()
-        self.fusion_side_info = MLPLayers(
-            [self.item_strong_dim, self.embedding_size],
-            dropout=0.2, activation="sigmoid", last_activation=False
-        )
-        self.side_info_ln = nn.LayerNorm(self.embedding_size)
-        self.fusion_side_info = nn.Sequential(
-            self.fusion_side_info,
-            self.side_info_ln
-        )
-        self.fusion_gate_layer = nn.Sequential(
-            nn.Linear(self.embedding_size, self.embedding_size),  # 输入维度减半
-            nn.Tanh(),
-            nn.Linear(self.embedding_size, 1),
-            nn.Sigmoid()
-        )
-        self.NEG_PREFIX = "neg_"
-        self.register_buffer(
-            'side_info_cache',
-            torch.zeros(self.n_items, self.embedding_size)
-        )
-        # 动量系数 (建议 0.99 或 0.999)
-        self.momentum = config['momentum'] if 'momentum' in config else 0.995
+        if self.enable_side_fuse:
+            self.fusion_side_info = MLPLayers(
+                [self.item_strong_dim, self.embedding_size],
+                dropout=0.2, activation="sigmoid", last_activation=False
+            )
+            self.side_info_ln = nn.LayerNorm(self.embedding_size)
+            self.fusion_side_info = nn.Sequential(
+                self.fusion_side_info,
+                self.side_info_ln
+            )
+            self.fusion_gate_layer = nn.Sequential(
+                nn.Linear(self.embedding_size, self.embedding_size),  # 输入维度减半
+                nn.Tanh(),
+                nn.Linear(self.embedding_size, 1),
+                nn.Sigmoid()
+            )
+       
+            self.register_buffer(
+                'side_info_cache',
+                torch.zeros(self.n_items, self.embedding_size)
+            )
+            # 动量系数 (建议 0.99 或 0.999)
+            self.momentum = config['momentum'] if 'momentum' in config else 0.995
 
-        # ============================================================
-        # 2. 定义 Target MLP (师父 - 用于生成稳定缓存)
-        # ============================================================
-        # 深拷贝 Online MLP，保证结构初始参数一致
-        self.fusion_side_info_target = copy.deepcopy(self.fusion_side_info)
+            # ============================================================
+            # 2. 定义 Target MLP (师父 - 用于生成稳定缓存)
+            # ============================================================
+            # 深拷贝 Online MLP，保证结构初始参数一致
+            self.fusion_side_info_target = copy.deepcopy(self.fusion_side_info)
 
-        # 核心：完全冻结 Target MLP，不接受梯度，只接受动量更新
-        for param in self.fusion_side_info_target.parameters():
-            param.requires_grad = False
+            # 核心：完全冻结 Target MLP，不接受梯度，只接受动量更新
+            for param in self.fusion_side_info_target.parameters():
+                param.requires_grad = False
 
 
         # parameters initialization
@@ -99,6 +100,7 @@ class FairBPR(GeneralRecommender):
         self.item_extra_embedding, self.user_extra_embedding = (
             gen_extra_embedding(self.eInfo, self.embedding_size, self.device)
         )
+        self.NEG_PREFIX = "neg_"
 
     @torch.no_grad()
     def _update_target_network(self):
@@ -221,54 +223,63 @@ class FairBPR(GeneralRecommender):
         pos_item = interaction[self.ITEM_ID]
         neg_item = interaction[self.NEG_ITEM_ID]
 
-
+        if self.enable_side_fuse:
         # all_item = torch.cat([pos_item, neg_item], dim=0)
-        pos_matrix, pos_batch_item_embedding = self.get_strength_item_embedding(interaction, pos_item)
-        neg_matrix, neg_batch_item_embedding = self.get_strength_item_embedding(interaction, neg_item, prefix=self.NEG_PREFIX)
-        with torch.no_grad():
-            # a. 动量更新参数
-            self._update_target_network()
+            pos_matrix, pos_batch_item_embedding = self.get_strength_item_embedding(interaction, pos_item)
+            neg_matrix, neg_batch_item_embedding = self.get_strength_item_embedding(interaction, neg_item, prefix=self.NEG_PREFIX)
+            with torch.no_grad():
+                # a. 动量更新参数
+                self._update_target_network()
 
-            # b. 用 Target 网络算一遍
-            pos_batch_target_emb = self.fusion_side_info_target(pos_batch_item_embedding)
-            neg_target_emb = self.fusion_side_info_target(neg_batch_item_embedding)
+                # b. 用 Target 网络算一遍
+                pos_batch_target_emb = self.fusion_side_info_target(pos_batch_item_embedding)
+                neg_target_emb = self.fusion_side_info_target(neg_batch_item_embedding)
 
-            # c. 写入全局缓存
-            # 注意：这里我们只更新 pos_item 对应的行
-            # .detach() 双重保险，确保不带计算图
-            self.side_info_cache[pos_item] = pos_batch_target_emb.detach()
-            self.side_info_cache[neg_item] = neg_target_emb.detach()
-        # pos_matrix, neg_matrix = torch.split(input_matrix, [pos_item.shape[0], neg_item.shape[0]], dim=0)
-
-        user_e, pos_e = self.forward(user, pos_item, custom_item_matrix=pos_matrix)
-        neg_e = neg_matrix if neg_matrix is not None else self.get_item_embedding(neg_item)
-
-        batch_item_embeddings = torch.cat([pos_e, neg_e], dim=0)
-        out, rq_loss_total, indices, residual = forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
-        pos_out, neg_out = torch.split(out, [pos_e.shape[0], neg_e.shape[0]], dim = 0)
+                # c. 写入全局缓存
+                # 注意：这里我们只更新 pos_item 对应的行
+                # .detach() 双重保险，确保不带计算图
+                self.side_info_cache[pos_item] = pos_batch_target_emb.detach()
+                self.side_info_cache[neg_item] = neg_target_emb.detach()
+            # pos_matrix, neg_matrix = torch.split(input_matrix, [pos_item.shape[0], neg_item.shape[0]], dim=0)
+        else:
+            user_e, pos_e = self.forward(user, pos_item)
+            neg_e = self.get_item_embedding(neg_item)
+        if self.content_bpr_loss_rate > 0:
+            batch_item_embeddings = torch.cat([pos_e, neg_e], dim=0)
+            out, rq_loss_total, indices, residual = forward_rq_item_epoch(self.rq_model_item, batch_item_embeddings)
+            pos_out, neg_out = torch.split(out, [pos_e.shape[0], neg_e.shape[0]], dim = 0)
+           
+            
+            pos_rq_score, neg_rq_score = torch.mul(user_e, pos_out).sum(dim=1), torch.mul(
+                user_e, neg_out
+            ).sum(dim=1)
+            content_loss = self.loss(pos_rq_score, neg_rq_score)
+        else:
+            rq_loss_total = 0
+            content_loss = 0
         pos_item_score, neg_item_score = torch.mul(user_e, pos_e).sum(dim=1), torch.mul(
             user_e, neg_e
         ).sum(dim=1)
-
-        pos_rq_score, neg_rq_score = torch.mul(user_e, pos_out).sum(dim=1), torch.mul(
-            user_e, neg_out
-        ).sum(dim=1)
         loss = self.loss(pos_item_score, neg_item_score)
-        content_loss = self.loss(pos_rq_score, neg_rq_score)
+        # content_loss = self.loss(pos_rq_score, neg_rq_score)
         loss = loss + self.item_rq_loss_rate * rq_loss_total + self.content_bpr_loss_rate * content_loss
         return loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
         item = interaction[self.ITEM_ID]
-        input_matrix = self.get_strength_item_embedding(interaction, item)
-        user_e, item_e = self.forward(user, item, custom_item_matrix=input_matrix)
+        if self.enable_side_fuse:
+            input_matrix, _ = self.get_strength_item_embedding(interaction, item)
+            user_e, item_e = self.forward(user, item, custom_item_matrix=input_matrix)
+        else:
+            user_e, item_e = self.forward(user, item)
         return torch.mul(user_e, item_e).sum(dim=1)
 
     def full_sort_predict(self, interaction):
         user = interaction[self.USER_ID]
         user_e = self.get_user_embedding(user)
         all_item_e = self.item_embedding.weight
-        all_item_e = self.get_fused_embeddings(all_item_e, self.side_info_cache)
+        if self.enable_side_fuse:
+            all_item_e = self.get_fused_embeddings(all_item_e, self.side_info_cache)
         score = torch.matmul(user_e, all_item_e.transpose(0, 1))
         return score.view(-1)

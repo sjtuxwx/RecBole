@@ -1,0 +1,8 @@
+eval_batch_size: 918200
+train_batch_size: 4096
+eval_batch_size: 40960
+# save_single_user: True          # (bool) Whether or not to save the single user interaction data.
+# save_base_path: output  # (str) Path to save the single user interaction data.
+# load_col:
+#   item: ["item_id", "categories"]
+#   inter: ["user_id", "item_id", "rating", "timestamp"]

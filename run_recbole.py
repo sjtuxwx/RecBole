@@ -137,6 +137,18 @@ if __name__ == "__main__":
         default=0.0
     )
 
+    parser.add_argument(
+        "--enable_side_fuse",
+        type=str2bool,
+        default=False
+    )
+
+    parser.add_argument(
+        "--task",
+        type=str,
+        default=None
+    )
+
     args, _ = parser.parse_known_args()
 
     config_file_list = (
