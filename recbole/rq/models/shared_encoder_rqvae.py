@@ -1,13 +1,16 @@
 import numpy as np
 import torch
+from mpmath import residual
+from numpy.core.numeric import indices
 from torch import nn
+from torch.cuda.nccl import init_rank
 from torch.nn import functional as F
 
 from .layers import MLPLayers
 from .rq import ResidualVectorQuantizer
+from .rqvae import RQVAE
 
-
-class RQVAE(nn.Module):
+class Shared_Encoder_RQVAE(nn.Module):
     def __init__(self,
                  in_dim=768,
                  # num_emb_list=[256,256,256,256],
@@ -28,7 +31,7 @@ class RQVAE(nn.Module):
                  pop_dim=64,
                  decoder_num: int = 1
         ):
-        super(RQVAE, self).__init__()
+        super(Shared_Encoder_RQVAE, self).__init__()
 
         self.in_dim = in_dim
         self.num_emb_list = num_emb_list
@@ -57,13 +60,20 @@ class RQVAE(nn.Module):
                                           kmeans_iters = self.kmeans_iters,
                                           sk_epsilons=self.sk_epsilons,
                                           sk_iters=self.sk_iters,)
+        self.rq = nn.ModuleList([ResidualVectorQuantizer(num_emb_list, e_dim,
+                                          beta=self.beta,
+                                          kmeans_init = self.kmeans_init,
+                                          kmeans_iters = self.kmeans_iters,
+                                          sk_epsilons=self.sk_epsilons,
+                                          sk_iters=self.sk_iters,) for _  in range(decoder_num)])
 
 
         self.decode_layer_dims = self.encode_layer_dims[::-1]
-        self.decoder = MLPLayers(layers=self.decode_layer_dims,
+        self.decoder = nn.ModuleList([MLPLayers(layers=self.decode_layer_dims,
                                        dropout=self.dropout_prob,bn=self.bn,
                                        activation='sigmoid'
-                                       )
+                                       ) for _ in range(decoder_num)])
+
         self.pop_decode_layer_dims = self.encode_layer_dims[::-1] + [pop_dim]
         self.pop_decoder = MLPLayers(layers=self.pop_decode_layer_dims,
                                  dropout=self.dropout_prob, bn=self.bn,
@@ -72,18 +82,25 @@ class RQVAE(nn.Module):
         self.W_gate = nn.Linear(self.in_dim, self.in_dim, bias=True)
     def forward(self, x, use_sk=True):
         ipt = x
-        x = self.encoder(x)
-        x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
-        out = self.decoder(x_q)
+        x = self.encoder(x) # 这个是最初始的输入
+        x_q_, rq_loss_, indices_, residual_, out_ = [], [], [], [], []
+        for i in range(self.decoder_num):
+            x_q, rq_loss, indices, residual = self.rq(x,use_sk=use_sk)
+            out = self.decoder(x_q)
+            x_q_.append(out)
+            rq_loss_.append(rq_loss)
+            indices_.append(indices)
+            residual_.append(residual)
+            out_.append(out)
         # pop_out = self.pop_decoder(residual)
         
 
-        return out, rq_loss, indices, residual
+        return out_, rq_loss_, indices_, residual_
 
     @torch.no_grad()
-    def get_indices(self, xs, use_sk=False):
+    def get_indices(self, xs, idx, use_sk=False):
         x_e = self.encoder(xs)
-        _, _, indices = self.rq(x_e, use_sk=use_sk)
+        _, _, indices = self.rq[idx](x_e, use_sk=use_sk)
         return indices
 
     def compute_loss(self, out, quant_loss, xs=None):
